@@ -25,6 +25,8 @@ A system that automates the process of clustering & querying images as well as a
 
 ### Current progress
 
+![gitrecord](https://user-images.githubusercontent.com/42161058/93515090-421c3200-f952-11ea-8094-26271000173f.gif)
+
 ## Install
 
 This module depends upon a knowledge of [PyQt5](https://pypi.org/project/PyQt5/). Once PyQt is installed in your system, simply run:
