@@ -4,13 +4,10 @@
 </p>
 
 
-[![license](https://img.shields.io/github/license/:user/:repo.svg)](LICENSE)
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
 [![downloads](https://img.shields.io/pypi/dm/anybadge.svg)](https://pypistats.org/packages/anybadge)
-[![GitHub last commit](https://img.shields.io/github/last-commit/jongracecox/anybadge.svg)](https://github.com/adarsh2012/Human-assisted-tagging/commits/master)
-[![GitHub](https://img.shields.io/github/license/jongracecox/anybadge.svg)](https://github.com/adarsh2012/Human-assisted-tagging/blob/master/LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/jongracecox/anybadge.svg?style=social)](https://github.com/adarsh2012/Human-assisted-tagging/stargazers)
-
+[![GitHub last commit](https://img.shields.io/github/last-commit/adarsh2012/Human-assisted-tagging)]()
+[![GitHub Contributors](https://img.shields.io/github/contributors/adarsh2012/Human-assisted-tagging)]()
 
 A system that automates the process of clustering & querying images as well as aids in the process of tagging un-labelled images. 
 
