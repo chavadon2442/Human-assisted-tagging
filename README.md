@@ -5,7 +5,6 @@
 
 
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
-[![downloads](https://img.shields.io/pypi/dm/anybadge.svg)](https://pypistats.org/packages/anybadge)
 [![GitHub last commit](https://img.shields.io/github/last-commit/adarsh2012/Human-assisted-tagging)]()
 [![GitHub Contributors](https://img.shields.io/github/contributors/adarsh2012/Human-assisted-tagging)]()
 
