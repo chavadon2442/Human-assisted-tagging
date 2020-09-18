@@ -7,6 +7,7 @@
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
 [![GitHub last commit](https://img.shields.io/github/last-commit/adarsh2012/Human-assisted-tagging)]()
 [![GitHub Contributors](https://img.shields.io/github/contributors/adarsh2012/Human-assisted-tagging)]()
+[![GitHub Issues](https://img.shields.io/github/issues/adarsh2012/Human-assisted-tagging)]()
 
 A system that automates the process of clustering & querying images as well as aids in the process of tagging un-labelled images. 
 
