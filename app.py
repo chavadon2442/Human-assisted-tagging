@@ -8,9 +8,10 @@ import model
 
 
 class ClusterDisplay(QLabel):
-	def __init__(self, imageLoc, title):
+	def __init__(self, imageLoc, title,imgSize=600):
 		super(ClusterDisplay, self).__init__()
 		self.len = len(imageLoc)
+		self.widthSize = imgSize
 		self.index = 0
 		self.title = title
 		self.imageLocList = imageLoc
@@ -24,7 +25,7 @@ class ClusterDisplay(QLabel):
 		self.layout.addWidget(QPushButton("Cluster: " +  self.title))
 		self.setLayout(self.layout)
 	def setImg(self):
-		image = QPixmap(self.imageLocList[self.index]).scaledToWidth(500)
+		image = QPixmap(self.imageLocList[self.index]).scaledToWidth(self.widthSize)
 		self.ImageLabel.setPixmap(image)
 		self.index = (self.index + 1) % self.len
 	def __timerSetup__(self):
@@ -32,7 +33,7 @@ class ClusterDisplay(QLabel):
 		self.timer.timeout.connect(self.setImg)
 		self.timer.start(5000)
 
-class MainWindow(QScrollArea):
+class MainWindow(QWidget):
 	def __init__(self, width, height, title, pos = [0,0]):
 		super(MainWindow, self).__init__()
 		self.setWindowTitle(title)
@@ -42,15 +43,12 @@ class MainWindow(QScrollArea):
 		self.__setupUI__()
 
 	def __setupUI__(self):
-		widget = QWidget()
-		self.mainLayout = QVBoxLayout(widget)
+		self.mainLayout = QVBoxLayout()
 		self.topLayout = QHBoxLayout()
 		self.clusterDisplayLayout = QVBoxLayout()
 		#contruct layout
 		self.mainLayout.addLayout(self.topLayout)
 		self.mainLayout.addLayout(self.clusterDisplayLayout)
-		self.setWidget(widget)
-		self.setWidgetResizable(True)
 		#add widget
 			#Top layout
 		self.locationLineEdit = QLineEdit("") 
@@ -61,21 +59,17 @@ class MainWindow(QScrollArea):
 		self.topLayout.addWidget(self.locSearchButton)
 		self.topLayout.addWidget(self.configButton)
 			#Cluster
+		scrollArea = QScrollArea()
+		self.contentInScroll = QWidget(scrollArea)
 		self.imageLayout = QGridLayout()
-		self.frame = QFrame()
-		self.frame.setFrameShape(QFrame.StyledPanel)
-		self.frame.setLineWidth(1)
-		self.frame.setLayout(self.imageLayout)
-		self.clusterDisplayLayout.addWidget(self.frame)
+		self.contentInScroll.setLayout(self.imageLayout)
+		scrollArea.setWidget(self.contentInScroll)
+		scrollArea.setWidgetResizable(True)
+		scrollArea.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+		scrollArea.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+		self.clusterDisplayLayout.addWidget(scrollArea)
 		#set main layout 
 		self.setLayout(self.mainLayout)
-		################SCROLL#######################
-		self.scroll = QScrollArea()
-		self.scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
-		self.scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-		# self.scroll.setWidget()
-		self.scroll.setWidgetResizable(True)
-        ################SCROLL#######################
 	def clearLayout(self, layout):
 		#Code reference [ https://www.semicolonworld.com/question/58072/clear-all-widgets-in-a-layout-in-pyqt ]
 		for i in reversed(range(layout.count())): 
@@ -83,14 +77,21 @@ class MainWindow(QScrollArea):
 
 	def requestClusterDisply(self):
 		# Give me images for each cluster 
-		COLAMT = 4
+		COLAMT = 3
 		location = self.locationLineEdit.text()
 		if(location):
+			self.clearLayout(self.imageLayout)
 			images = self.model.requestClusterImages(location, amount=10)
+			SIZE = 600
+			if(len(images) < 3):
+				SIZE = 1920//len(images)
 			for i,img in enumerate(images):
 				row = i//COLAMT
 				col = i%COLAMT
-				self.imageLayout.addWidget(ClusterDisplay(imageLoc=images[img], title=img),row,col)
+				img = ClusterDisplay(imageLoc=images[img], title=img, imgSize=SIZE)
+				self.imageLayout.addWidget(img,row,col)
+				self.imageLayout.setColumnMinimumWidth(col,500)
+				self.imageLayout.setRowMinimumHeight(row,500)
 				self.locationLineEdit.setText("")
 
 
