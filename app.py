@@ -41,7 +41,7 @@ class MainWindow(QWidget):
 		self.setGeometry(pos[0],pos[1],width,height)
 		self.model = model.modelImage()
 		self.__setupUI__()
-
+		
 	def __setupUI__(self):
 		self.mainLayout = QVBoxLayout()
 		self.mainLayoutClusterList = QVBoxLayout()
