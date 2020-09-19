@@ -44,11 +44,19 @@ class MainWindow(QWidget):
 
 	def __setupUI__(self):
 		self.mainLayout = QVBoxLayout()
+		self.mainLayoutClusterList = QVBoxLayout()
 		self.topLayout = QHBoxLayout()
 		self.clusterDisplayLayout = QVBoxLayout()
+		###### TAB ########
+		self.windowTab = QTabWidget(self)
+		self.clusterListTab = QWidget()
+		self.clusterProfileTab = QWidget()
+		self.windowTab.addTab(self.clusterListTab, "Cluster location")
+		self.windowTab.addTab(self.clusterProfileTab, "Cluster profile")
+		##################
 		#contruct layout
-		self.mainLayout.addLayout(self.topLayout)
-		self.mainLayout.addLayout(self.clusterDisplayLayout)
+		self.mainLayoutClusterList.addLayout(self.topLayout)
+		self.mainLayoutClusterList.addLayout(self.clusterDisplayLayout)
 		#add widget
 			#Top layout
 		self.locationLineEdit = QLineEdit("") 
@@ -65,18 +73,20 @@ class MainWindow(QWidget):
 		self.contentInScroll.setLayout(self.imageLayout)
 		scrollArea.setWidget(self.contentInScroll)
 		scrollArea.setWidgetResizable(True)
-		scrollArea.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+		scrollArea.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
 		scrollArea.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
 		self.clusterDisplayLayout.addWidget(scrollArea)
 		#set main layout 
+		self.clusterListTab.setLayout(self.mainLayoutClusterList)
+		self.mainLayout.addWidget(self.windowTab)
 		self.setLayout(self.mainLayout)
+
 	def clearLayout(self, layout):
 		#Code reference [ https://www.semicolonworld.com/question/58072/clear-all-widgets-in-a-layout-in-pyqt ]
 		for i in reversed(range(layout.count())): 
 			layout.itemAt(i).widget().setParent(None)
 
 	def requestClusterDisply(self):
-		# Give me images for each cluster 
 		COLAMT = 3
 		location = self.locationLineEdit.text()
 		if(location):
