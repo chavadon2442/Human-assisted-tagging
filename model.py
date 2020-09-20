@@ -7,12 +7,12 @@ class modelImage:
 		self.clusters = []
 		self.clusterPath = None
 
-	def getClusterList(self, listLocation):
+	def get_cluster_list(self, listLocation):
 		pass
-	def getClusterImages(self,clusterLocation, amount):
+	def get_cluster_images(self,clusterLocation, amount):
 		pass
 
-	def requestClusterImages(self, clusterLocation, amount="all"):
+	def request_cluster_images(self, clusterLocation, amount="all"):
 		imageDict = dict()
 		self.clusters = os.listdir(clusterLocation)
 		self.clusterPath = clusterLocation
@@ -24,6 +24,6 @@ class modelImage:
 			imageDict[cluster] = [clusterLocation+"\\"+cluster+"\\"+clusterImages[random.randint(0,clusterLen-1)] for i in range(amount)]
 		return imageDict
 
-	def requestDissimilarImages(self, clusterName):
+	def request_dissimilar_images(self, clusterName):
 		#[ (imagelocation, percentageDissimilar), (imagelocation, percentageDissimilar), (imagelocation, percentageDissimilar)... ]
 		pass
