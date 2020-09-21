@@ -6,7 +6,6 @@ from tabs.cluster_profile_tab import ClusterProfileTab
 import os
 import sys
 
-
 class MainWindow(QWidget):
 	def __init__(self, width, height, title, pos = [0,0]):
 		super(MainWindow, self).__init__()
@@ -25,7 +24,7 @@ class MainWindow(QWidget):
 		self.mainLayout.addWidget(self.windowTab)
 		self.setLayout(self.mainLayout)
 	def switch_cluster_and_tab(self, name):
-		#self.clusterProfileTab.label.setText("Cluster " +  name)
+		self.clusterProfileTab.newClusterRequest(name)
 		self.windowTab.setCurrentIndex(1)
 
 
