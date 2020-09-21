@@ -22,7 +22,7 @@ A system that automates the process of clustering & querying images as well as a
 
 ### Current progress
 
-![progress_2](https://user-images.githubusercontent.com/42161058/93670822-7285dc80-fac8-11ea-9ae5-0e5d00c50beb.gif)
+![progress-3](https://user-images.githubusercontent.com/42161058/93812590-0fd54200-fc7c-11ea-8e33-28fe72655abf.gif)
 
 ## Install
 
