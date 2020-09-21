@@ -1,6 +1,6 @@
 import os
 import random
-
+import cv2
 
 class modelImage:
 	def __init__(self):
@@ -26,4 +26,10 @@ class modelImage:
 
 	def request_dissimilar_images(self, clusterName):
 		#[ (imagelocation, percentageDissimilar), (imagelocation, percentageDissimilar), (imagelocation, percentageDissimilar)... ]
+		pass
+
+	"""
+	Add your function here
+	"""
+	def brightness(self, image, brightness):
 		pass

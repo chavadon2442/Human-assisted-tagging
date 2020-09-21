@@ -25,7 +25,7 @@ class MainWindow(QWidget):
 		self.mainLayout.addWidget(self.windowTab)
 		self.setLayout(self.mainLayout)
 	def switch_cluster_and_tab(self, name):
-		self.clusterProfileTab.label.setText("Cluster " +  name)
+		#self.clusterProfileTab.label.setText("Cluster " +  name)
 		self.windowTab.setCurrentIndex(1)
 
 
