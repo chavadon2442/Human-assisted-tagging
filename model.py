@@ -28,8 +28,12 @@ class modelImage:
 		#[ (imagelocation, percentageDissimilar), (imagelocation, percentageDissimilar), (imagelocation, percentageDissimilar)... ]
 		pass
 
-	"""
-	Add your function here
-	"""
-	def brightness(self, image, brightness):
-		pass
+
+
+
+        def brightness(self, image, alpha=1.0, beta=2.0):
+            self.image = cv2.imread(image)
+
+            result = cv2.addWeighted(image,alpha,np.zeros(image.shape,image.dtype),0,beta)
+
+            return result
