@@ -1,7 +1,7 @@
 import os
 import random
 import cv2
-import sklearn.cluster import MiniBatchKmeans # Make sure you have sklearn--> pip install sklearn
+from sklearn.cluster import MiniBatchKMeans
 import numpy as np
 import json
 from PyQt5 import Qt,QtCore, QtGui
@@ -26,7 +26,6 @@ class modelImage:
 		return imageDict
 
 	def request_dissimilar_images(self, clusterName):
-
 		#[ (imagelocation, percentageDissimilar), (imagelocation, percentageDissimilar), (imagelocation, percentageDissimilar)... ]
 		pass
 
@@ -52,36 +51,24 @@ class modelImage:
 		#[ (imagelocation, percentageDissimilar), (imagelocation, percentageDissimilar), (imagelocation, percentageDissimilar)... ]
 		pass
 
-        def brightness(self, image, alpha=1.0, beta=2.0):
-
-            self.image = cv2.imread(image)
-
-            result = cv2.addWeighted(image,alpha,np.zeros(image.shape,image.dtype),0,beta)
-
-            return result
-
-        def quant(self,image,cluster):
- 
-            self.image = cv2.imread(image)
-            (h,w) = image.shape(:2)
-            image = cv2.cvtColor((image.shape[0] * image.shape[1],3))
-            
-            clt = MiniBatchKMeans(n_clusters = cluster)
-            quant = clt.cluster_centers_.astype("uint8")[labels]
-
-            quant = quant.reshape((h,w,3))
-            image = image.reshape((h,w,3))
-
-            quantized_image = cv2.hstack([image,quant])
-
-            return quantized_image
+	def quant(self,image,cluster,isArr):
+		if(not isArr):
+			image = cv2.imread(image)
+		(h,w) = image.shape[:2]
+		image = image.reshape((image.shape[0] * image.shape[1], 3))
+		clt = MiniBatchKMeans(n_clusters = 4)
+		labels = clt.fit_predict(image)
+		quant = clt.cluster_centers_.astype("uint8")[labels]
+		quant = quant.reshape((h, w, 3))
+		image = image.reshape((h, w, 3))
+		quantized_image = np.hstack([image, quant])
+		return quant
 
 
 	def brightness(self, image, isArr=False, alpha=1.0, beta=0.0):
+		print("asdad")
 		if(not isArr):
 			image = cv2.imread(image)
-		# kernel = np.ones((5,5),np.float32)/25
-		# result = cv2.filter2D(image,-1,kernel)
 		result = cv2.addWeighted(image,alpha,np.zeros(image.shape,image.dtype),0,beta)		
 		return result
 

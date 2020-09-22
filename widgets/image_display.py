@@ -20,9 +20,6 @@ class imageDisplay(QLabel):
 		self.mainLayout.addLayout(self.buttonLayout)
 		#Creation images 
 		self.ImageLabel = QLabel()
-		# image = self.model.brightness(r"D:\ClusterWork\ImageClusters\file 1\1\bottom_view_2020-05-25-13-11-32-136597_18.tiff")
-		# image = QtGui.QImage(image.data, image.shape[1], image.shape[0], QtGui.QImage.Format_RGB888).rgbSwapped()
-		#image = QPixmap(r"D:\ClusterWork\ImageClusters\file 1\1\bottom_view_2020-05-25-13-11-32-136597_18.tiff").scaledToWidth(self.widthSize)
 		#Control
 		self.quantizeButton = QPushButton("Quantize")
 		self.brightnessPlus = QPushButton("Brightness +")
@@ -35,7 +32,7 @@ class imageDisplay(QLabel):
 		#set the main layout
 		self.setLayout(self.mainLayout)
 	def __setupFuncs__(self):
-		#self.quantizeButton.clicked.connect(None)
+		self.quantizeButton.clicked.connect(self.quantizeReq)
 		self.brightnessPlus.clicked.connect(lambda: self.brightness(10))
 		self.brightnessMinus.clicked.connect(lambda: self.brightness(-10))
 	def setPhotoPath(self, newimage):
@@ -50,3 +47,9 @@ class imageDisplay(QLabel):
 		image = self.model.brightness(QImageInArr,isArr=True, beta=amt)
 		self.imgData = qimage2ndarray.array2qimage(image)
 		self.setImg()
+	def quantizeReq(self):
+		QImageInArr = qimage2ndarray.rgb_view(self.imgData)
+		image = self.model.quant(QImageInArr,cluster=4,isArr=True)
+		self.imgData = qimage2ndarray.array2qimage(image)
+		self.setImg()
+		
