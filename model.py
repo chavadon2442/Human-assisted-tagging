@@ -41,9 +41,7 @@ class modelImage:
             return result
 
         def quant(self,image,cluster):
-
-            #Import of from sklearn.cluster import MiniBatchKmeans needed
-            from sklearn.cluster import MiniBatchKmeans
+ 
             self.image = cv2.imread(image)
             (h,w) = image.shape(:2)
             image = cv2.cvtColor((image.shape[0] * image.shape[1],3))
