@@ -32,9 +32,10 @@ class imageDisplay(QLabel):
 		#set the main layout
 		self.setLayout(self.mainLayout)
 	def __setupFuncs__(self):
-		self.quantizeButton.clicked.connect(self.quantizeReq)
-		self.brightnessPlus.clicked.connect(lambda: self.brightness(10))
-		self.brightnessMinus.clicked.connect(lambda: self.brightness(-10))
+		pass
+		#self.quantizeButton.clicked.connect(self.quantizeReq)
+		#self.brightnessPlus.clicked.connect(lambda: self.brightness(10))
+		#self.brightnessMinus.clicked.connect(lambda: self.brightness(-10))
 	def setPhotoPath(self, newimage):
 		self.imgPath = newimage
 		self.imgData = QtGui.QImage(self.imgPath, "tiff")

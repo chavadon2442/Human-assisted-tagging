@@ -11,10 +11,11 @@ class ClusterProfileTab(QWidget):
 		super(ClusterProfileTab, self).__init__(parent)
 		self.parent = parent
 		self.clusterName = ""
-		self.currentPhoto = ""
 		self.type = ""
 		self.model = model.modelImage()
+		self.chosenView = None
 		self.__UIsetup__()
+		self.__datasetup__()
 	def __UIsetup__(self):
 		#Layout
 		self.mainLayout = QHBoxLayout()
@@ -28,6 +29,8 @@ class ClusterProfileTab(QWidget):
 		self.photoInfoFrame = QFrame()
 		self.clusterInfoFrame.setMaximumWidth(525)
 		self.photoInfoFrame.setMaximumWidth(525)
+		self.clusterInfoFrame.setMaximumHeight(100)
+		self.photoInfoFrame.setMaximumHeight(400)
 		self.photoInfoFrame.setFrameStyle(QFrame.Panel)
 		self.clusterInfoFrame.setFrameStyle(QFrame.Panel)
 		self.clusterInfoFrame.setStyleSheet("QFrame {border : 2px solid rgba(220,220,200,1); background-color: rgba(220,220,220,0.1)}")
@@ -39,55 +42,65 @@ class ClusterProfileTab(QWidget):
 		self.imageLayout.addWidget(self.imageDisplay)
 		#Cluster info
 		self.clusterInfoLayout = QGridLayout()
-		self.clusterInfoLayout.addWidget(QPushButton("Next cluster"), 0,0,1,2)
-		self.clusterNameWidget = QLabel("Cluster Name: ")
-		self.clusterTypeWidget = QLabel("Type: ")
-		self.clusterImageAmountWidget = QLabel("Image amount: ")
-		self.clusterInfoLayout.addWidget(self.clusterNameWidget, 1,0,1,2)
-		self.clusterInfoLayout.addWidget(self.clusterTypeWidget, 2, 0)
-		self.clusterInfoLayout.addWidget(self.clusterImageAmountWidget, 2,1)
-		self.dropDown = QComboBox()
-		self.dropDown.addItem("Clean")
-		self.dropDown.addItem("Dirty")
-		self.dropDown.addItem("Broken")
-		self.clusterInfoLayout.addWidget(self.dropDown, 3,0,1,2)
-		self.clusterInfoLayout.addWidget(QPushButton("tag cluster"), 4,0,1,2)
+		self.viewList = QComboBox()
+		self.clusterList = QComboBox()
+		self.imageLabel = QLabel("Image Label: ")
+		self.viewList.activated.connect(self.getView)
+		self.clusterList.activated.connect(self.setClusterImage)
+
+		self.clusterInfoLayout.addWidget(QLabel("View"), 0,0)
+		self.clusterInfoLayout.addWidget(self.viewList, 0,1)
+		self.clusterInfoLayout.addWidget(QLabel("Cluster"), 1,0)
+		self.clusterInfoLayout.addWidget(self.clusterList, 1,1)
+		self.clusterInfoLayout.addWidget(self.imageLabel, 2,0,2,2)
 		self.clusterInfoFrame.setLayout(self.clusterInfoLayout)
 
 		#Photo info
 		self.photoInfoLayout = QGridLayout()
-		self.getNextPhotoButton = QPushButton("Next random photo") 
-		self.filenameLabel = QLabel("File name: ")
-		self.mostSimilarToLabel = QLabel("Tag recommended: ")
+		self.getNextPhotoButton = QPushButton("Next photo") 
 		self.photoInfoLayout.addWidget(self.getNextPhotoButton, 0,0,1,2)
-		self.photoInfoLayout.addWidget(QPushButton("Get outlier"), 1,0,1,2)
-		self.photoInfoLayout.addWidget(self.filenameLabel, 2,0,1,2)
-		self.photoInfoLayout.addWidget(self.mostSimilarToLabel, 3,0,1,2)
-		self.photoDropDown = QComboBox()
+		self.photoDropDown = QListWidget()
+		self.photoInfoLayout.addWidget(self.photoDropDown, 1,0,1,2)
+		self.photoInfoLayout.addWidget(QPushButton("tag cluster"), 2,0,1,2)
 		self.photoDropDown.addItem("Clean")
 		self.photoDropDown.addItem("Dirty")
 		self.photoDropDown.addItem("Broken")
-		self.photoInfoLayout.addWidget(self.photoDropDown, 4,0,1,2)
-		self.photoInfoLayout.addWidget(QPushButton("tag image"), 5,0,1,2)
 		self.photoInfoFrame.setLayout(self.photoInfoLayout)
 		##buttonsetup
 		self.getNextPhotoButton.clicked.connect(self.getPhoto)
 		#setup
 		self.setLayout(self.mainLayout)
 
-	def getPhoto(self):
-		newImage = self.model.get_cluster_image(self.clusterName)
-		self.imageDisplay.setPhotoPath(newImage)
-		self.filenameLabel.setText("File name: " + newImage.split("\\")[-1])
-		return newImage
+	def __datasetup__(self):
+		self.mainData = self.model.get_views_clusters()
+		[self.viewList.addItem(views) for views in self.mainData]
+		self.getView()
+	
+	def getView(self): #Get view and setClusterImage is done because we QBoxList uses these functions
+		self.currentView = self.viewList.itemText(self.viewList.currentIndex())
+		self.setupClusterList()
 
-	def newClusterRequest(self, clusterName):
-		self.clusterName = clusterName
-		self.clusterNameWidget.setText("Cluster Name: " + clusterName)
-		imgType = self.getPhoto()
-		imgType = imgType.split("\\")[-1]
-		imgType = imgType.split("_")
-		self.clusterTypeWidget.setText("Type: " + imgType[0])
+	def setupClusterList(self):
+		clusters = self.mainData[self.currentView]
+		try:
+			self.clusterList.clear()
+		except:
+			pass
+		[self.clusterList.addItem(cluster) for cluster in clusters]
+		self.setClusterImage()
+
+	def setClusterImage(self):
+		self.currentCluster = self.clusterList.itemText(self.clusterList.currentIndex())
+		self.imgIndex = -1
+		self.getPhoto()
+
+	def getPhoto(self):
+		curCluster = self.mainData[self.currentView][self.currentCluster]
+		self.imgIndex = (self.imgIndex + 1) % curCluster.imgAmt
+		imgPath = curCluster.images[self.imgIndex]
+
+		self.imageLabel.setText("/".join(imgPath.split("/")[5:]))
+		self.imageDisplay.setPhotoPath(imgPath)
 
 	def clear_layout(self, layout):
 	#Code reference [ https://www.semicolonworld.com/question/58072/clear-all-widgets-in-a-layout-in-pyqt ]

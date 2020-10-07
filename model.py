@@ -6,6 +6,30 @@ import numpy as np
 import json
 from PyQt5 import Qt,QtCore, QtGui
 
+class cluster:
+    def __init__(self):
+        self.paths = []
+        self.images = []
+        self.imgAmtRequired = 30
+    def addPath(self, path):
+        self.paths.append(path)
+    def addImages(self):
+        amtFromEach = self.imgAmtRequired//len(self.paths)
+        for path in self.paths:
+            imgs = os.listdir(path)
+            try:
+                self.images = self.images +  random.sample(imgs, amtFromEach)
+            except:
+                self.images = self.images + imgs
+            for i,localImgPath in enumerate(self.images):
+            	self.images[i] = os.path.join(path, localImgPath)
+        self.imgAmt = len(self.images)
+    def removeImages(self, index):
+        self.images.pop(index)
+        self.imgAmt -= 1
+        if(len(self.images) < 1):
+            self.addImages()
+
 
 class modelImage:
 	def __init__(self):
@@ -72,3 +96,26 @@ class modelImage:
 		result = cv2.addWeighted(image,alpha,np.zeros(image.shape,image.dtype),0,beta)		
 		return result
 
+	def get_views_clusters(self):
+		#PATH CURRENTLY HARD CODED
+		MAINPATH = "/home/adarsh/codingWork/Cluster"
+		#GET ALL DIRECTORIES
+		VIEWS = [files  for files in os.listdir(MAINPATH) if files.find(".") == -1]
+		VIEW_AND_CLUSTERS = dict()
+		for directs in VIEWS:
+		    VIEW_PATH  = os.path.join(os.path.abspath(MAINPATH), directs)
+		    CLUSTERS = dict({})
+		    #get all cluster of particular view
+		    for root, subdirs, files in os.walk(VIEW_PATH):
+		        for items in files:
+		            if(items.find(".tiff") != -1):
+		                clusterName = root.split("/")[-1]
+		                if(clusterName not in CLUSTERS):
+		                    CLUSTERS[clusterName] = cluster()
+		                CLUSTERS[clusterName].addPath(root)
+		                break
+		    #set up images for that cluster
+		    for cls in CLUSTERS:
+		        CLUSTERS[cls].addImages()
+		    VIEW_AND_CLUSTERS[directs] = CLUSTERS
+		return VIEW_AND_CLUSTERS
