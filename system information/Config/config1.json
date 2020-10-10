@@ -1,0 +1,7 @@
+{
+  "view": "bottom_view",
+  "model": "resnet101",
+  "k": 20,
+  "focusPoint": "",
+  "isSave": false
+}

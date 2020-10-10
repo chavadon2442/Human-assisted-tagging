@@ -5,6 +5,8 @@ from sklearn.cluster import MiniBatchKMeans
 import numpy as np
 import json
 from PyQt5 import Qt,QtCore, QtGui
+from clusterLogic.model import View_cluster
+
 
 class cluster:
     def __init__(self):
@@ -33,8 +35,8 @@ class cluster:
 
 class modelImage:
 	def __init__(self):
-		self.storingFile = "./system information/currentClusterInfo.txt"
-
+		self.storageLocation = "./system information/"
+		self.configLocation = "./system information/Config"
 	def get_cluster_list(self, listLocation):
 		pass
 	def request_cluster_images(self, clusterLocation, amount="all"):
@@ -63,11 +65,11 @@ class modelImage:
 		data = dict()
 		data["clusters"] = clusterList
 		data["clusterPath"] = clusterPath
-		with open(self.storingFile, 'w') as outputfile:
+		with open(self.storageLocation, 'w') as outputfile:
 			json.dump(data, outputfile)
 
 	def getInfo(self):
-		with open(self.storingFile) as inputFile:
+		with open(self.storageLocation)  as inputFile:
 			data = json.load(inputFile)
 		return data
 
@@ -97,8 +99,9 @@ class modelImage:
 		return result
 
 	def get_views_clusters(self):
-		#PATH CURRENTLY HARD CODED
-		MAINPATH = "/home/adarsh/codingWork/Cluster"
+		with open(self.storageLocation + "cluster_info.json") as configData:
+			information = json.load(configData)
+			MAINPATH =  information["cluster_location"]
 		#GET ALL DIRECTORIES
 		VIEWS = [files  for files in os.listdir(MAINPATH) if files.find(".") == -1]
 		VIEW_AND_CLUSTERS = dict()
@@ -109,7 +112,7 @@ class modelImage:
 		    for root, subdirs, files in os.walk(VIEW_PATH):
 		        for items in files:
 		            if(items.find(".tiff") != -1):
-		                clusterName = root.split("/")[-1]
+		                clusterName = root.split("\\")[-1]
 		                if(clusterName not in CLUSTERS):
 		                    CLUSTERS[clusterName] = cluster()
 		                CLUSTERS[clusterName].addPath(root)
@@ -119,3 +122,35 @@ class modelImage:
 		        CLUSTERS[cls].addImages()
 		    VIEW_AND_CLUSTERS[directs] = CLUSTERS
 		return VIEW_AND_CLUSTERS
+
+	def getAllConfigs(self):
+		returnVAl = {}
+		for conf in os.listdir(self.configLocation):
+			with open(os.path.join(self.configLocation, conf)) as values:
+				#confName = conf[:conf.find(".")]
+				values = json.load(values)
+				returnVAl[conf] = values
+		return returnVAl
+
+	def clusterProcess(self,path,structure,configFile):
+		configFileName = os.path.join(self.configLocation,configFile) 
+		with open(configFileName) as _defaultSetup:
+			_defaultSetup = json.load(_defaultSetup)
+			print(_defaultSetup)
+			isSave      = _defaultSetup["isSave"]     
+			view        = _defaultSetup["view"]  
+			model       = _defaultSetup["model"]  
+			focusPoint  = _defaultSetup["focusPoint"]   
+			k           = _defaultSetup["k"] 
+		all_views = [os.path.join(path,vw) for vw in os.listdir(path) if vw.find(".") == -1]
+		for viewPath in all_views:
+			vwName = os.path.split(viewPath)[-1] # get tail of path
+			vwClass = View_cluster(vwName, viewPath)
+			print(vwName)
+			vwClass.START(model=model, isSave=isSave, k=k, focusPoint=focusPoint)
+
+
+if __name__ == "__main__":
+	modelClass = modelImage()
+	imges = modelClass.getAllConfigs()
+	print(imges)

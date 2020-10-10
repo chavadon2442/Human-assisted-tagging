@@ -98,8 +98,7 @@ class ClusterProfileTab(QWidget):
 		curCluster = self.mainData[self.currentView][self.currentCluster]
 		self.imgIndex = (self.imgIndex + 1) % curCluster.imgAmt
 		imgPath = curCluster.images[self.imgIndex]
-
-		self.imageLabel.setText("/".join(imgPath.split("/")[5:]))
+		self.imageLabel.setText("\\".join(imgPath.split("\\")[5:]))
 		self.imageDisplay.setPhotoPath(imgPath)
 
 	def clear_layout(self, layout):
