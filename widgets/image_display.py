@@ -21,14 +21,17 @@ class imageDisplay(QLabel):
 		#Creation images 
 		self.ImageLabel = QLabel()
 		#Control
-		self.quantizeButton = QPushButton("Quantize")
-		self.brightnessPlus = QPushButton("Brightness +")
-		self.brightnessMinus = QPushButton("Brightness -")
+		
+		#self.quantizeButton = QPushButton("Quantize")
+		#self.brightnessPlus = QPushButton("Brightness +")
+		#self.brightnessMinus = QPushButton("Brightness -")
+		
 		#Adding widgets to layout
 		self.imageLayout.addWidget(self.ImageLabel)	
-		self.buttonLayout.addWidget(self.quantizeButton)
-		self.buttonLayout.addWidget(self.brightnessMinus)
-		self.buttonLayout.addWidget(self.brightnessPlus)	
+		#self.buttonLayout.addWidget(self.quantizeButton)
+		#self.buttonLayout.addWidget(self.brightnessMinus)
+		#self.buttonLayout.addWidget(self.brightnessPlus)	
+		
 		#set the main layout
 		self.setLayout(self.mainLayout)
 	def __setupFuncs__(self):

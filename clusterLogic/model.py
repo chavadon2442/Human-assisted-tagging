@@ -33,7 +33,7 @@ class View_cluster:
             self.signal.updateInfo.emit(_str)
             start_time = time.time()
             kmeans = KMeans(n_clusters=k, random_state=0).fit(feature_list)
-            _str = 'timeClustering with k =' + k + ' is ' + str(time.time() - start_time)
+            _str = "timeClustering with k = {} is {}".format(k, time.time() - start_time)
             self.signal.updateInfo.emit(_str)
             self.cluster_by_folder(k, img_list, kmeans, paths)
             if isSave == True:

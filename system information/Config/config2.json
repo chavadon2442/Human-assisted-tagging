@@ -1,25 +1,25 @@
 {
   "bottom_view": {
-    "model": "resnet101",
-    "k": 20,
+    "model": "resnet50",
+    "k": 10,
     "focusPoint": "",
     "isSave": false
   },
   "top_view": {
     "model": "resnet101",
-    "k": 20,
+    "k": 30,
     "focusPoint": "",
     "isSave": false
   },
   "left_view": {
     "model": "resnet101",
-    "k": 20,
+    "k": 10,
     "focusPoint": "",
     "isSave": false
   },
   "right_view": {
     "model": "resnet101",
-    "k": 20,
+    "k": 15,
     "focusPoint": "",
     "isSave": false
   }

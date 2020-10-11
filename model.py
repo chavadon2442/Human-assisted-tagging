@@ -1,4 +1,4 @@
-import os
+import os, shutil
 import random
 import cv2
 from sklearn.cluster import MiniBatchKMeans
@@ -98,6 +98,13 @@ class modelImage:
 		result = cv2.addWeighted(image,alpha,np.zeros(image.shape,image.dtype),0,beta)		
 		return result
 
+
+	def getAllClusterLocal(self):
+		with open(self.storageLocation + "cluster_info.json") as configData:
+			information = json.load(configData)
+			MAINPATH =  information["cluster_location"]
+		return MAINPATH
+		
 	def get_views_clusters(self):
 		with open(self.storageLocation + "cluster_info.json") as configData:
 			information = json.load(configData)
@@ -132,6 +139,22 @@ class modelImage:
 				returnVAl[conf] = values
 		return returnVAl
 
+	def tagCluster(self, view, paths, tag):
+		with open(os.path.join(self.storageLocation, "cluster_info.json")) as data:
+			data = json.load(data)
+			tagLocation = data["datasetLocation"]
+		view_loc = os.path.join(tagLocation, view)
+		if not os.path.exists(view_loc):
+			os.mkdir(view_loc)
+		tag_sub_loc = os.path.join(view_loc, tag)
+		if not os.path.exists(tag_sub_loc):
+			os.mkdir(tag_sub_loc)
+		for pt in paths:
+			allImgs = os.listdir(pt)
+			allImgs = [os.path.join(pt, imgName) for imgName in allImgs]
+			[ shutil.move(imgPath, tag_sub_loc) for imgPath in allImgs ]
+			os.rmdir(pt)
+
 	def validLocationCheck(self, location):
 		try:
 			os.listdir(location)
@@ -151,24 +174,19 @@ class ClusteringThread(QtCore.QRunnable):
 		self.configFile = configFile
 		self.signals = threadSignals()
 		self.configLocation = "./system information/Config" ###########EITHER STORE CONFIG LOCATION SOMEWHERE OR MAKE IT FIXED##########################
-	#@QtCore.pyqtSlot()
+	@QtCore.pyqtSlot()
 	def run(self):
 		configFileName = os.path.join(self.configLocation,self.configFile) 
-		with open(configFileName) as _defaultSetup:
-			_defaultSetup = json.load(_defaultSetup)
-			print(_defaultSetup)
-			isSave      = _defaultSetup["isSave"]     
-			view        = _defaultSetup["view"]  
-			model       = _defaultSetup["model"]  
-			focusPoint  = _defaultSetup["focusPoint"]   
-			k           = _defaultSetup["k"] 
+		with open(configFileName) as vwConfig:
+			vwConfig = json.load(vwConfig)
 		all_views = [os.path.join(self.path,vw) for vw in os.listdir(self.path) if vw.find(".") == -1]
 		for viewPath in all_views:
 			vwName = os.path.split(viewPath)[-1] # get tail of path
 			update = "Working on "+ vwName
 			self.signals.updateInfo.emit(update)
+			self.signals.updateInfo.emit("{} ==CONFIG==> {}".format(vwName, vwConfig[vwName]))
 			vwClass = View_cluster(vwName, viewPath, self.signals)
-			vwClass.START(model=model, isSave=isSave, k=k, focusPoint=focusPoint)
+			vwClass.START(model=vwConfig[vwName]["model"], isSave=vwConfig[vwName]["isSave"], k=vwConfig[vwName]["k"], focusPoint=vwConfig[vwName]["focusPoint"])
 		self.signals.finished.emit()
 
 

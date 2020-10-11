@@ -45,13 +45,10 @@ class ClusterListTab(QWidget):
 		#Choose config [row]
 		self.configInputUI = RowInformtionWidget(self)
 		self.configInputSelection = QComboBox()	
-		self.configInputSelection.setMinimumWidth(300)	
-		self.configInputSummary = QTextEdit()
-		font = QtGui.QFont()
-		font.setPointSize(10)
-		self.configInputSummary.setFont(font)
-		self.configInputSummary.setReadOnly(True)
-		self.configInputSummary.setMaximumHeight(300)
+		self.configInputSelection.setMinimumWidth(300)
+		self.configInputSelection.activated.connect(self.displayConfigSummary)
+		self.configInputSummary = QTableWidget()
+		self.configInputSummary.setMaximumHeight(250)
 		self.configInputUI.layout.addWidget(QLabel("Config :- "))
 		self.configInputUI.layout.addWidget(self.configInputSelection)
 		self.configInputUI.layout.addWidget(self.configInputSummary)
@@ -83,8 +80,20 @@ class ClusterListTab(QWidget):
 		self.displayConfigSummary()
 	
 	def displayConfigSummary(self):
-		jsonVal = self.configValue[self.configInputSelection.itemText(self.configInputSelection.currentIndex())]
-		self.configInputSummary.setText(json.dumps(jsonVal, indent=4))
+		jsonVal = self.configValue[self.configInputSelection.itemText(self.configInputSelection.currentIndex())] 
+		configkeys = list(jsonVal.keys())
+		print(configkeys)
+		self.configInputSummary.setColumnCount(len(jsonVal)+1)
+		self.configInputSummary.setRowCount(len(jsonVal[configkeys[0]]) + 1)
+		for i,keys in enumerate(jsonVal[configkeys[0]]):
+			self.configInputSummary.setItem(0,i+1, QTableWidgetItem(keys))
+		for x, keys in enumerate(configkeys):
+			self.configInputSummary.setItem(x+1,0, QTableWidgetItem(keys))
+			for y, subinfo in enumerate(jsonVal[keys]):
+				cell = QTableWidgetItem(str(jsonVal[keys][subinfo]))
+				cell.setFlags(QtCore.Qt.ItemIsEnabled)
+				self.configInputSummary.setItem(x+1,y+1,cell)
+		# self.configInputSummary.setText(json.dumps(jsonVal, indent=4))
 
 	def startClusteringProcess(self):
 		path = self.locationInputField.text().strip()
