@@ -6,7 +6,7 @@ import numpy as np
 import json
 from PyQt5 import Qt,QtCore, QtGui
 from clusterLogic.model import View_cluster
-
+import time
 
 class cluster:
     def __init__(self):
@@ -132,8 +132,28 @@ class modelImage:
 				returnVAl[conf] = values
 		return returnVAl
 
-	def clusterProcess(self,path,structure,configFile):
-		configFileName = os.path.join(self.configLocation,configFile) 
+	def validLocationCheck(self, location):
+		try:
+			os.listdir(location)
+			return True
+		except:
+			return False
+
+
+class threadSignals(QtCore.QObject):
+	finished = QtCore.pyqtSignal()
+	updateInfo = QtCore.pyqtSignal(str)
+class ClusteringThread(QtCore.QRunnable):
+	def __init__(self,path,structure,configFile):
+		super(ClusteringThread, self).__init__()
+		self.path = path
+		self.structure = structure
+		self.configFile = configFile
+		self.signals = threadSignals()
+		self.configLocation = "./system information/Config" ###########EITHER STORE CONFIG LOCATION SOMEWHERE OR MAKE IT FIXED##########################
+	#@QtCore.pyqtSlot()
+	def run(self):
+		configFileName = os.path.join(self.configLocation,self.configFile) 
 		with open(configFileName) as _defaultSetup:
 			_defaultSetup = json.load(_defaultSetup)
 			print(_defaultSetup)
@@ -142,12 +162,18 @@ class modelImage:
 			model       = _defaultSetup["model"]  
 			focusPoint  = _defaultSetup["focusPoint"]   
 			k           = _defaultSetup["k"] 
-		all_views = [os.path.join(path,vw) for vw in os.listdir(path) if vw.find(".") == -1]
+		all_views = [os.path.join(self.path,vw) for vw in os.listdir(self.path) if vw.find(".") == -1]
 		for viewPath in all_views:
 			vwName = os.path.split(viewPath)[-1] # get tail of path
+			update = "Working on "+ vwName
+			self.signals.updateInfo.emit(update)
 			vwClass = View_cluster(vwName, viewPath)
-			print(vwName)
+			vwClass.signal.update.connect(self.update)
 			vwClass.START(model=model, isSave=isSave, k=k, focusPoint=focusPoint)
+		self.signals.finished.emit()
+	def update(self, string):
+		self.signals.updateInfo.emit(string)
+
 
 
 if __name__ == "__main__":

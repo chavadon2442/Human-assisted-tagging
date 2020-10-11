@@ -12,13 +12,14 @@ class MainWindow(QWidget):
 		self.setWindowTitle(title)
 		self.setWindowIcon(QIcon('./localmedia/icon.png')) 
 		self.setGeometry(pos[0],pos[1],width,height)
+		self.threadPool = QtCore.QThreadPool()
 		self.__setupUI__() 
 		
 	def __setupUI__(self):
 		self.mainLayout = QVBoxLayout()
 		self.windowTab = QTabWidget(self)
-		self.clusterListTab = ClusterListTab(self)
-		self.clusterProfileTab = ClusterProfileTab(self)
+		self.clusterListTab = ClusterListTab(self, threadpool=self.threadPool)
+		self.clusterProfileTab = ClusterProfileTab(self, threadpool=self.threadPool)
 		self.windowTab.addTab(self.clusterListTab, "Cluster location")
 		self.windowTab.addTab(self.clusterProfileTab, "Cluster profile")
 		self.mainLayout.addWidget(self.windowTab)

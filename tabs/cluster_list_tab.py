@@ -19,10 +19,11 @@ class RowInformtionWidget(QWidget):
 
 
 class ClusterListTab(QWidget):
-	def __init__(self,parent):
+	def __init__(self,parent, threadpool):
 		super(ClusterListTab, self).__init__(parent)
 		self.model = model.modelImage()
 		self.parent = parent
+		self.threadpool = threadpool
 		self.__UIsetup__()		
 		self.setConfigOptions()
 
@@ -31,6 +32,7 @@ class ClusterListTab(QWidget):
 		#Location [row]
 		self.locationInputUI = RowInformtionWidget(self)
 		self.locationInputField = QLineEdit()
+		self.locationInputField.setText("D:\\Documents\\Capstone_Work\\Testing_Sample_keras\\ImageLocation")
 		self.locationInputUI.layout.addWidget(QLabel("Location:- "))
 		self.locationInputUI.layout.addWidget(self.locationInputField)
 		#Create structure [row]
@@ -86,9 +88,25 @@ class ClusterListTab(QWidget):
 
 	def startClusteringProcess(self):
 		path = self.locationInputField.text().strip()
+		if(self.model.validLocationCheck(path) == False):
+			print("Location given is not valid, please try again!")
+			return None
 		structure = self.createStructureYes.isChecked()
 		configFile = self.configInputSelection.itemText(self.configInputSelection.currentIndex())
-		self.model.clusterProcess(path,structure,configFile)
+		clusterThread = model.ClusteringThread(path, structure, configFile)
+		self.threadpool.start(clusterThread)
+		clusterThread.signals.finished.connect(self.ClusteringCompleted)
+		clusterThread.signals.updateInfo.connect(self.updateConsole)
+		self.blockUntilClusterFinish()
+
+	def updateConsole(self, update):
+		self.consoleOutputArea.append(update)
+
+	def blockUntilClusterFinish(self):
+		self.initiateClusterButton.setEnabled(False)
+
+	def ClusteringCompleted(self):
+		self.initiateClusterButton.setEnabled(True)
 
 	def clear_layout(self, layout):
 	#Code reference [ https://www.semicolonworld.com/question/58072/clear-all-widgets-in-a-layout-in-pyqt ]
