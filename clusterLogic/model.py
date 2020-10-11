@@ -6,19 +6,13 @@ import glob
 import os
 import time
 import datetime
-############################# I AM GOING TO REGRET ADDING THIS #####################
-from PyQt5.QtCore import pyqtSignal, QObject
-##############################$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#####################
-
-class sendingInfoSignal(QObject):
-    update = pyqtSignal(str)
 
 class View_cluster:
-    def __init__(self, view, path):
+    def __init__(self, view, path, signal):
         self.view = view
         self.PATH = path
         self.data = {}
-        self.signal =  sendingInfoSignal()
+        self.signal =  signal
         self.__setupImgDim()
     def START(self, model, isSave, k, focusPoint):
         if(isSave == True):
@@ -27,21 +21,20 @@ class View_cluster:
     def startCluster(self, model, isSave, k):
         allSection = [os.path.join(self.PATH,section) for section in os.listdir(self.PATH) if section.find(".") == -1]
         for paths in allSection:
-            self.signal.update.emit("Started")
-            self.signal.update.emit(paths)
+            self.signal.updateInfo.emit("Started")
+            self.signal.updateInfo.emit(paths)
             img_list = []
             start_time = time.time()
             feature_list, img_list = self.extract_vector(model, paths, img_list) 
             if isSave == True:
                 self.data['timeExtractFeature'] = time.time() - start_time
                 self.data['totalImages'] = len(img_list)
-            self.signal.update.emit()
             _str = 'timeExtractFeature ' + str(time.time() - start_time)
-            self.signal.update.emit(_str)
+            self.signal.updateInfo.emit(_str)
             start_time = time.time()
             kmeans = KMeans(n_clusters=k, random_state=0).fit(feature_list)
             _str = 'timeClustering with k =' + k + ' is ' + str(time.time() - start_time)
-            self.signal.update.emit(_str)
+            self.signal.updateInfo.emit(_str)
             self.cluster_by_folder(k, img_list, kmeans, paths)
             if isSave == True:
                 results = []
@@ -126,7 +119,7 @@ class View_cluster:
         index = 0
         for im in glob.glob(path + '/*.tiff'):
             _str = "Working on {}\n{}\nimg={}".format(os.path.split(im)[1], os.path.split(im)[0],index)
-            self.signal.update.emit(_str)
+            self.signal.updateInfo.emit(_str)
             index += 1
             img_list.append(im)
             if model == 'sreena':

@@ -167,12 +167,9 @@ class ClusteringThread(QtCore.QRunnable):
 			vwName = os.path.split(viewPath)[-1] # get tail of path
 			update = "Working on "+ vwName
 			self.signals.updateInfo.emit(update)
-			vwClass = View_cluster(vwName, viewPath)
-			vwClass.signal.update.connect(self.update)
+			vwClass = View_cluster(vwName, viewPath, self.signals)
 			vwClass.START(model=model, isSave=isSave, k=k, focusPoint=focusPoint)
 		self.signals.finished.emit()
-	def update(self, string):
-		self.signals.updateInfo.emit(string)
 
 
 
