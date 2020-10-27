@@ -10,6 +10,7 @@
 [![GitHub Issues](https://img.shields.io/github/issues/adarsh2012/Human-assisted-tagging)]()
 
 A system that automates the process of clustering & querying images as well as aids in the process of tagging un-labelled images. 
+![qqface_0_web](https://user-images.githubusercontent.com/42161058/97279987-3cc5d780-186e-11eb-87be-1233cc606391.gif)
 
 ## Table of Contents
 
