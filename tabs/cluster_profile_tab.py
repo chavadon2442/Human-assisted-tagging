@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import *
-from PyQt5 import Qt,QtCore
+from PyQt5 import Qt,QtCore, QtWidgets
 from PyQt5.QtGui import QIcon, QPixmap, QFont
 from functools import partial
 from widgets.image_display import imageDisplay
@@ -71,6 +71,7 @@ class ClusterProfileTab(QWidget):
 		self.getNextPhotoButton = QPushButton("Next photo") 
 		self.photoInfoLayout.addWidget(self.getNextPhotoButton, 0,0,1,2)
 		self.photoDropDown = QListWidget()
+		self.photoDropDown.setSelectionMode(QListWidget.MultiSelection)
 		self.photoInfoLayout.addWidget(self.photoDropDown, 1,0,1,2)
 		self.photoInfoLayout.addWidget(self.tagButton, 2,0,1,2)
 		self.photoInfoLayout.addWidget(self.tagPhotoButton, 3,0,1,2)

@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import *
 from widgets.cluster_display import ClusterDisplay
-from PyQt5 import Qt,QtCore, QtGui
+from PyQt5 import Qt,QtCore, QtGui, QtWidgets
 import model
 from functools import partial
 import json
