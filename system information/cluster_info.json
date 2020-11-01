@@ -1,4 +1,9 @@
 {
-  "cluster_location": "D:\\Documents\\Capstone_Work\\Testing_Sample_keras\\ImageLocation",
-  "datasetLocation": "D:\\Documents\\Capstone_Work\\Testing_Sample_keras\\Clusterlocation"
+  "cluster_locations": [
+    "D:\\Documents\\Capstone_Work\\Testing_Sample_keras\\ImageLocation",
+    "E:\\bad_images",
+    "E:\\automation_of_something"
+  ],
+  "datasetLocation": "D:\\Documents\\Capstone_Work\\Testing_Sample_keras\\NewDatasetLocation",
+  "datasetLocation_old": "D:\\Documents\\Capstone_Work\\Testing_Sample_keras\\TagLocation"
 }

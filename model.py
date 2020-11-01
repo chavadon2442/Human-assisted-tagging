@@ -7,6 +7,10 @@ import json
 from PyQt5 import Qt,QtCore, QtGui
 from clusterLogic.model import View_cluster
 import time
+import subprocess
+from psutil import virtual_memory
+from DB import AppDB
+
 
 class cluster:
     def __init__(self):
@@ -37,6 +41,8 @@ class modelImage:
 	def __init__(self):
 		self.storageLocation = "./system information/"
 		self.configLocation = "./system information/Config"
+		self.DB = AppDB()
+		
 	def get_cluster_list(self, listLocation):
 		pass
 	def request_cluster_images(self, clusterLocation, amount="all"):
@@ -92,7 +98,6 @@ class modelImage:
 
 
 	def brightness(self, image, isArr=False, alpha=1.0, beta=0.0):
-		print("asdad")
 		if(not isArr):
 			image = cv2.imread(image)
 		result = cv2.addWeighted(image,alpha,np.zeros(image.shape,image.dtype),0,beta)		
@@ -102,13 +107,13 @@ class modelImage:
 	def getAllClusterLocal(self):
 		with open(self.storageLocation + "cluster_info.json") as configData:
 			information = json.load(configData)
-			MAINPATH =  information["cluster_location"]
+			MAINPATH =  information["cluster_locations"]
 		return MAINPATH
 		
-	def get_views_clusters(self):
+	def get_views_clusters(self, index):
 		with open(self.storageLocation + "cluster_info.json") as configData:
 			information = json.load(configData)
-			MAINPATH =  information["cluster_location"]
+			MAINPATH =  information["cluster_locations"][index]
 		#GET ALL DIRECTORIES
 		VIEWS = [files  for files in os.listdir(MAINPATH) if files.find(".") == -1]
 		VIEW_AND_CLUSTERS = dict()
@@ -144,16 +149,33 @@ class modelImage:
 			data = json.load(data)
 			tagLocation = data["datasetLocation"]
 		view_loc = os.path.join(tagLocation, view)
+		#Check if view location exists (if not create the directory)
 		if not os.path.exists(view_loc):
 			os.mkdir(view_loc)
-		tag_sub_loc = os.path.join(view_loc, tag)
-		if not os.path.exists(tag_sub_loc):
-			os.mkdir(tag_sub_loc)
 		for pt in paths:
 			allImgs = os.listdir(pt)
 			allImgs = [os.path.join(pt, imgName) for imgName in allImgs]
-			[ shutil.move(imgPath, tag_sub_loc) for imgPath in allImgs ]
+			for imgPath in allImgs:
+				imgFileName = os.path.split(imgPath)[-1]
+				self.DB.tag_image(imgFileName, tag)
+				shutil.move(imgPath, view_loc)
 			os.rmdir(pt)
+
+	def tagImage(self, view, imgLoc, tag):
+		with open(os.path.join(self.storageLocation, "cluster_info.json")) as data:
+			data = json.load(data)
+			tagLocation = data["datasetLocation"]
+		imgFileName = os.path.split(imgLoc)[-1]
+		view_loc = os.path.join(tagLocation, view)
+		#Check if view location exists (if not create the directory)
+		if not os.path.exists(view_loc):
+			os.mkdir(view_loc)
+		try:	
+			self.DB.tag_image(imgFileName, tag)
+			shutil.move(imgLoc, view_loc)
+			return True
+		except:
+			return False
 
 	def validLocationCheck(self, location):
 		try:
@@ -161,7 +183,30 @@ class modelImage:
 			return True
 		except:
 			return False
+	
+	def addClusterLocation(self, location):
+		with open("./system information/cluster_info.json", "r+") as configData:
+			information = json.load(configData)
+			if(os.path.normcase(location) not in [os.path.normcase(pts) for pts in information["cluster_locations"]]):
+				information["cluster_locations"].append(location)
+			configData.seek(0)
+			configData.truncate(0)
+			json.dump(information, configData)
+	
+	def structureFile(self):
+		mem = virtual_memory()
+		print(mem.total)  # total physical memory available
 
+	def createNewConfig(self, name, mapVal):
+		configName = "./system information/Config/{}.json".format(name)
+		try:
+			with open(configName, "x") as newConfigFile:
+				json.dump(mapVal, newConfigFile)
+			return True
+		except:
+			return False
+
+		
 
 class threadSignals(QtCore.QObject):
 	finished = QtCore.pyqtSignal()
@@ -172,6 +217,7 @@ class ClusteringThread(QtCore.QRunnable):
 		self.path = path
 		self.structure = structure
 		self.configFile = configFile
+		self.model = modelImage()
 		self.signals = threadSignals()
 		self.configLocation = "./system information/Config" ###########EITHER STORE CONFIG LOCATION SOMEWHERE OR MAKE IT FIXED##########################
 	@QtCore.pyqtSlot()
@@ -180,6 +226,16 @@ class ClusteringThread(QtCore.QRunnable):
 		with open(configFileName) as vwConfig:
 			vwConfig = json.load(vwConfig)
 		all_views = [os.path.join(self.path,vw) for vw in os.listdir(self.path) if vw.find(".") == -1]
+		os.startfile(self.path) # Does not work on linux! 
+		self.model.addClusterLocation(self.path)
+		with open("./system information/cluster_info.json", "r+") as configData:
+			information = json.load(configData)
+			if(os.path.normcase(self.path) not in [os.path.normcase(pts) for pts in information["cluster_locations"]]):
+				information["cluster_locations"].append(self.path)
+			configData.seek(0)
+			configData.truncate(0)
+			json.dump(information, configData)
+
 		for viewPath in all_views:
 			vwName = os.path.split(viewPath)[-1] # get tail of path
 			update = "Working on "+ vwName
@@ -193,5 +249,5 @@ class ClusteringThread(QtCore.QRunnable):
 
 if __name__ == "__main__":
 	modelClass = modelImage()
-	imges = modelClass.getAllConfigs()
-	print(imges)
+	print("Yo")
+	#modelClass.structureFile()

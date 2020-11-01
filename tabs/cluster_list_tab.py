@@ -49,9 +49,12 @@ class ClusterListTab(QWidget):
 		self.configInputSelection.activated.connect(self.displayConfigSummary)
 		self.configInputSummary = QTableWidget()
 		self.configInputSummary.setMaximumHeight(250)
+		self.updateConfigOptions = QPushButton("Update")
+		self.updateConfigOptions.clicked.connect(self.setConfigOptions)
 		self.configInputUI.layout.addWidget(QLabel("Config :- "))
 		self.configInputUI.layout.addWidget(self.configInputSelection)
 		self.configInputUI.layout.addWidget(self.configInputSummary)
+		self.configInputUI.layout.addWidget(self.updateConfigOptions)
 		self.initiateClusterButton = QPushButton("Start clustering")
 		self.initiateClusterButton.clicked.connect(self.startClusteringProcess)
 		#Console output text area [row]

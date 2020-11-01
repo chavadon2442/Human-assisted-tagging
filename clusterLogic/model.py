@@ -91,17 +91,21 @@ class View_cluster:
             my_new_model = Sequential()
             if model == 'resnet50':
                 resnet_weights_path = 'resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5'
-                my_new_model.add(ResNet50(include_top=False, pooling='avg', weights=resnet_weights_path))
+                my_new_model.add(ResNet50(include_top=False, pooling='avg', weights='imagenet'))
+                #my_new_model.add(ResNet50(include_top=False, pooling='avg', weights=resnet_weights_path))
             elif model == 'resnet152':
                 resnet_weights_path = 'resnet152v2_weights_tf_dim_ordering_tf_kernels_notop.h5'
-                my_new_model.add(ResNet152V2(include_top=False, weights=resnet_weights_path, pooling='max'))
+                my_new_model.add(ResNet152V2(include_top=False, weights='imagenet', pooling='max'))
+                #my_new_model.add(ResNet152V2(include_top=False, weights=resnet_weights_path, pooling='max'))
             elif model == 'resnet101':
                 my_new_model.add(ResNet101(include_top=False, weights='imagenet',pooling='max'))
             elif model == 'inception':
                 my_new_model.add(InceptionResNetV2(include_top=False, weights='imagenet',pooling='avg'))
             elif model == 'nasnet':
                 resnet_weights_path = 'NASNet-large-no-top.h5'
-                my_new_model.add(NASNetLarge(include_top=False, weights=resnet_weights_path,pooling='avg', classes=1000))
+                my_new_model.add(NASNetLarge(include_top=False, weights='imagenet',pooling='avg', classes=1000))
+                #my_new_model.add(NASNetLarge(include_top=False, weights=resnet_weights_path,pooling='avg', classes=1000))
+
             # Say not to train first layer (ResNet) model. It is already trained
             my_new_model.layers[0].trainable = False
         else:
@@ -117,7 +121,7 @@ class View_cluster:
 
         resnet_feature_list = []
         index = 0
-        for im in glob.glob(path + '/*.tiff'):
+        for im in glob.glob(path + '/**/*.tiff', recursive=True):
             _str = "Working on {}\n{}\nimg={}".format(os.path.split(im)[1], os.path.split(im)[0],index)
             self.signal.updateInfo.emit(_str)
             index += 1
@@ -150,6 +154,7 @@ class View_cluster:
                 resnet_feature = my_new_model.predict(img)
                 resnet_feature_np = np.array(resnet_feature)
                 resnet_feature_list.append(resnet_feature_np.flatten())
+        print("asdsad")
         return np.array(resnet_feature_list), img_list
     def cluster_by_folder(self, k, img_list, kmeans, path):
         for i in range(k):

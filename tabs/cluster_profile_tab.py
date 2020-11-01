@@ -4,7 +4,7 @@ from PyQt5.QtGui import QIcon, QPixmap, QFont
 from functools import partial
 from widgets.image_display import imageDisplay
 import model
-
+import os
 
 class ClusterProfileTab(QWidget):
 	def __init__(self,parent, threadpool):
@@ -50,8 +50,9 @@ class ClusterProfileTab(QWidget):
 		self.clusterList = QComboBox()
 		self.listOfClusterLocation = QComboBox()
 		self.imageLabel = QLabel("Image Label: ")
-		self.viewList.activated.connect(self.getView)
-		self.clusterList.activated.connect(self.setClusterImage)
+		self.viewList.activated.connect(self.setupClusterList)
+		self.listOfClusterLocation.activated.connect(self.getClusterDirectData)
+		self.clusterList.activated.connect(self.getPhoto)
 		self.clusterInfoLayout.addWidget(self.listOfClusterLocation,0,0,1,2)
 		self.clusterInfoLayout.addWidget(QLabel("View"), 1,0)
 		self.clusterInfoLayout.addWidget(self.viewList, 1,1)
@@ -62,16 +63,20 @@ class ClusterProfileTab(QWidget):
 
 		#Photo info
 		self.tagButton = QPushButton("tag complete cluster")
+		self.tagPhotoButton = QPushButton("tag current image")
 		self.tagButton.clicked.connect(self.tagCluster)
+		self.tagPhotoButton.clicked.connect(self.tagSelctedImage)
+		#self.tagButton.setEnabled(False)
 		self.photoInfoLayout = QGridLayout()
 		self.getNextPhotoButton = QPushButton("Next photo") 
 		self.photoInfoLayout.addWidget(self.getNextPhotoButton, 0,0,1,2)
 		self.photoDropDown = QListWidget()
 		self.photoInfoLayout.addWidget(self.photoDropDown, 1,0,1,2)
 		self.photoInfoLayout.addWidget(self.tagButton, 2,0,1,2)
-		self.photoDropDown.addItem("A")
-		self.photoDropDown.addItem("B")
-		self.photoDropDown.addItem("C")
+		self.photoInfoLayout.addWidget(self.tagPhotoButton, 3,0,1,2)
+		tags  = self.model.DB.query_alltag()
+		for tg in tags:
+			self.photoDropDown.addItem(tg)
 		self.photoDropDown.setCurrentRow(0)
 		self.photoInfoFrame.setLayout(self.photoInfoLayout)
 		##buttonsetup
@@ -80,45 +85,56 @@ class ClusterProfileTab(QWidget):
 		self.setLayout(self.mainLayout)
 
 	def __datasetup__(self):
-		try:
-			self.viewList.clear()
-		except:
-			pass
-		self.mainData = self.model.get_views_clusters()
-		[self.viewList.addItem(views) for views in self.mainData]
-		self.getView()
-	
-	def tagCluster(self):
-		#cluster = self.mainData[self.currentView][self.currentCluster]
-		tag = [item.text() for item in self.photoDropDown.selectedItems()]
-		self.model.tagCluster(self.currentView, self.mainData[self.currentView][self.currentCluster].paths, tag[0])
-		del self.mainData[self.currentView][self.currentCluster]
-		self.getView()
+		self.setupClusterLocal()
+		self.getClusterDirectData()
 
-	def getView(self): #Get view and setClusterImage is done because we QBoxList uses these functions
-		self.currentView = self.viewList.itemText(self.viewList.currentIndex())
+	def setupClusterLocal(self):
+		self.listOfClusterLocation.clear()
+		[self.listOfClusterLocation.addItem(location) for location in self.model.getAllClusterLocal()]
+
+	def getClusterDirectData(self):
+		self.viewList.clear()
+		self.mainData = self.model.get_views_clusters(self.listOfClusterLocation.currentIndex())
+		[self.viewList.addItem(views) for views in self.mainData]
 		self.setupClusterList()
 
 	def setupClusterList(self):
-		clusters = self.mainData[self.currentView]
-		try:
-			self.clusterList.clear()
-		except:
-			pass
+		self.clusterList.clear()
+		currentView, _ = self.getCurrentClusterAndView()
+		clusters = self.mainData[currentView]
 		[self.clusterList.addItem(cluster) for cluster in clusters]
-		self.setClusterImage()
-
-	def setClusterImage(self):
-		self.currentCluster = self.clusterList.itemText(self.clusterList.currentIndex()) #the hell is going with self.currentCluster??
 		self.imgIndex = -1
 		self.getPhoto()
 
 	def getPhoto(self):
-		curCluster = self.mainData[self.currentView][self.currentCluster]
+		currentView, currentCluster = self.getCurrentClusterAndView()
+		curCluster = self.mainData[currentView][currentCluster]
 		self.imgIndex = (self.imgIndex + 1) % curCluster.imgAmt
-		imgPath = curCluster.images[self.imgIndex]
-		self.imageLabel.setText("\\".join(imgPath.split("\\")[5:]))
-		self.imageDisplay.setPhotoPath(imgPath)
+		currentImgPath = curCluster.images[self.imgIndex]
+		self.imageLabel.setText(os.path.split(currentImgPath)[-1])
+		self.imageDisplay.setPhotoPath(currentImgPath)
+		self.tagPhotoButton.setEnabled(True)
+
+	def tagCluster(self):
+		currentView, currentCluster = self.getCurrentClusterAndView()
+		tag = [item.text() for item in self.photoDropDown.selectedItems()]
+		self.model.tagCluster(currentView, self.mainData[currentView][currentCluster].paths, tag)
+		del self.mainData[currentView][currentCluster]
+		self.setupClusterList()
+
+	def tagSelctedImage(self):
+		self.tagPhotoButton.setEnabled(False)
+		currentView, currentCluster = self.getCurrentClusterAndView()
+		curCluster = self.mainData[currentView][currentCluster]
+		tag = [item.text() for item in self.photoDropDown.selectedItems()]
+		if(self.model.tagImage(currentView, curCluster.images[self.imgIndex], tag) == True):
+			curCluster.removeImages(self.imgIndex)
+			self.getPhoto()
+		else:
+			print("Moving images failed!")
+
+	def getCurrentClusterAndView(self):
+		return self.viewList.itemText(self.viewList.currentIndex()), self.clusterList.itemText(self.clusterList.currentIndex())
 
 	def clear_layout(self, layout):
 	#Code reference [ https://www.semicolonworld.com/question/58072/clear-all-widgets-in-a-layout-in-pyqt ]
