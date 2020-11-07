@@ -2,6 +2,7 @@ import os, shutil
 import random
 import cv2
 from sklearn.cluster import MiniBatchKMeans
+from sklearn.utils import all_estimators
 import numpy as np
 import json
 from PyQt5 import Qt,QtCore, QtGui
@@ -10,7 +11,8 @@ import time
 import subprocess
 from psutil import virtual_memory
 from DB import AppDB
-
+from sklearn.pipeline import Pipeline, make_pipeline
+import joblib 
 
 class cluster:
     def __init__(self):
@@ -41,6 +43,7 @@ class modelImage:
 	def __init__(self):
 		self.storageLocation = "./system information/"
 		self.configLocation = "./system information/Config"
+		self.modelLocation = "./system information/models"
 		self.DB = AppDB()
 		
 	def get_cluster_list(self, listLocation):
@@ -205,8 +208,22 @@ class modelImage:
 			return True
 		except:
 			return False
-
+	def getAllEstimators(self):
+		estimators = all_estimators(type_filter='classifier')
+		clustersEstimators = all_estimators(type_filter='cluster')
+		transformers = all_estimators(type_filter='transformer')
+		return estimators + clustersEstimators + transformers
 		
+	def makePipeline(self, piplist, name):
+		pipModel = Pipeline(piplist)
+		filename = name + ".joblib"
+		try:
+			#We do this in order to make sure no such file exists, if it does it returns False
+			joblib.load(os.path.join(self.modelLocation, filename))
+			return False
+		except:
+			joblib.dump(pipModel,os.path.join(self.modelLocation, filename))
+			return True
 
 class threadSignals(QtCore.QObject):
 	finished = QtCore.pyqtSignal()

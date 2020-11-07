@@ -85,7 +85,6 @@ class ClusterListTab(QWidget):
 	def displayConfigSummary(self):
 		jsonVal = self.configValue[self.configInputSelection.itemText(self.configInputSelection.currentIndex())] 
 		configkeys = list(jsonVal.keys())
-		print(configkeys)
 		self.configInputSummary.setColumnCount(len(jsonVal)+1)
 		self.configInputSummary.setRowCount(len(jsonVal[configkeys[0]]) + 1)
 		for i,keys in enumerate(jsonVal[configkeys[0]]):
