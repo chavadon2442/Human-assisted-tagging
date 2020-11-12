@@ -18,6 +18,7 @@ class PipeLineWidget(QWidget):
         layout.addWidget(self.estmList)
         layout.addWidget(self.paramsTable)
         self.setLayout(layout)
+        self.itemSelected()
     def itemSelected(self):
         for name, model in self.items: 
             if(self.estmList.itemText(self.estmList.currentIndex()) == name):
@@ -165,8 +166,12 @@ class ConfigTab(QWidget):
             pipList = []
             for i in range(amount):
                 pipList.append((self.configLayout.itemAt(i).widget().name,self.configLayout.itemAt(i).widget().model))
-            if( self.model.makePipeline(pipList, name) == False ):
-                self.errTextMessageWidget.setText("Model with this name already exists!")
+            makePipLine = self.model.makePipeline(pipList, name)
+            if( makePipLine < 0 ):
+                if(makePipLine == -1):
+                    self.errTextMessageWidget.setText("Model with this name already exists!")
+                if(makePipLine == -2):
+                    self.errTextMessageWidget.setText("Failed to make pipeline!")
             else:
                 self.errTextMessageWidget.setText("Done")
         else:

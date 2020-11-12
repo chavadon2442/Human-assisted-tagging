@@ -1,18 +1,23 @@
-import os, shutil
+import os, shutil, string, glob
 import random
 import cv2
 from sklearn.cluster import MiniBatchKMeans
+from sklearn.metrics import classification_report
 from sklearn.utils import all_estimators
 import numpy as np
 import json
 from PyQt5 import Qt,QtCore, QtGui
 from clusterLogic.model import View_cluster
+from clusterLogic.PipeModules import Functions
 import time
 import subprocess
 from psutil import virtual_memory
 from DB import AppDB
 from sklearn.pipeline import Pipeline, make_pipeline
 import joblib 
+import inspect
+from sklearn.model_selection import train_test_split
+
 
 class cluster:
     def __init__(self):
@@ -45,7 +50,6 @@ class modelImage:
 		self.configLocation = "./system information/Config"
 		self.modelLocation = "./system information/models"
 		self.DB = AppDB()
-		
 	def get_cluster_list(self, listLocation):
 		pass
 	def request_cluster_images(self, clusterLocation, amount="all"):
@@ -208,26 +212,51 @@ class modelImage:
 			return True
 		except:
 			return False
+
 	def getAllEstimators(self):
 		estimators = all_estimators(type_filter='classifier')
 		clustersEstimators = all_estimators(type_filter='cluster')
 		transformers = all_estimators(type_filter='transformer')
-		return estimators + clustersEstimators + transformers
+		madeFunctions = []
+		for name, obj in inspect.getmembers(Functions, inspect.isclass):
+			if(obj.__module__ == "clusterLogic.PipeModules.Functions" and name != "ImgPathToRGB"):
+				madeFunctions.append((name,obj))
+		return  madeFunctions + estimators 
 		
 	def makePipeline(self, piplist, name):
-		pipModel = Pipeline(piplist)
 		filename = name + ".joblib"
 		try:
 			#We do this in order to make sure no such file exists, if it does it returns False
 			joblib.load(os.path.join(self.modelLocation, filename))
-			return False
+			return -1
 		except:
-			joblib.dump(pipModel,os.path.join(self.modelLocation, filename))
-			return True
+			try:
+				piplist = [("ImgPathToRGB", Functions.ImgPathToRGB())] + piplist
+				print(piplist)
+				pipModel = Pipeline(piplist)
+				joblib.dump(pipModel,os.path.join(self.modelLocation, filename))
+				return 0
+			except:
+				return -2
+	def getAllPipeConfig(self):
+		return os.listdir(self.modelLocation)
 
+	def getPipeLine(self, filename):
+		return joblib.load(os.path.join(self.modelLocation, filename))
+
+	def findImageAbs(self, filename):
+		""" Given a search path, find file with requested name """
+		with open(os.path.join(self.storageLocation, "cluster_info.json")) as data:
+			data = json.load(data)
+			search_path = data["datasetLocation"]
+		for im in glob.glob(search_path + '/**/*.tiff', recursive=True):
+			imname = os.path.split(im)[-1]
+			if(filename == imname):
+				return im
 class threadSignals(QtCore.QObject):
 	finished = QtCore.pyqtSignal()
 	updateInfo = QtCore.pyqtSignal(str)
+	performanceOutput = QtCore.pyqtSignal(str)
 class ClusteringThread(QtCore.QRunnable):
 	def __init__(self,path,structure,configFile):
 		super(ClusteringThread, self).__init__()
@@ -261,6 +290,27 @@ class ClusteringThread(QtCore.QRunnable):
 			vwClass = View_cluster(vwName, viewPath, self.signals)
 			vwClass.START(model=vwConfig[vwName]["model"], isSave=vwConfig[vwName]["isSave"], k=vwConfig[vwName]["k"], focusPoint=vwConfig[vwName]["focusPoint"])
 		self.signals.finished.emit()
+
+
+
+class TrainingThread(QtCore.QRunnable):
+	def __init__(self,X,y,pipeline):
+		super(TrainingThread, self).__init__()
+		self.X = X
+		self.y = y
+		self.pipline = pipeline
+		self.signals = threadSignals()
+	@QtCore.pyqtSlot()
+	def run(self):
+		X_train, X_test, y_train, y_test = train_test_split(self.X, self.y, test_size=0.33)
+		print("Starting .....")
+		self.pipline.fit(X_train,y_train)
+		print("Over .......")
+		pred = self.pipline.predict(X_test)
+		print(classification_report(y_test, pred))
+		self.signals.performanceOutput.emit(classification_report(y_test, pred))
+
+
 
 
 

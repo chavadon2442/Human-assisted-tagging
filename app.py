@@ -4,6 +4,7 @@ from PyQt5 import Qt,QtCore
 from tabs.cluster_list_tab import ClusterListTab
 from tabs.cluster_profile_tab import ClusterProfileTab
 from tabs.config_tab import ConfigTab
+from tabs.training_tab import TrainTab
 import os
 import sys
 
@@ -22,9 +23,11 @@ class MainWindow(QWidget):
 		self.clusterListTab = ClusterListTab(self, threadpool=self.threadPool)
 		self.clusterProfileTab = ClusterProfileTab(self, threadpool=self.threadPool)
 		self.configTab = ConfigTab(self, threadpool=self.threadPool)
+		self.trainingTab = TrainTab(self, threadpool=self.threadPool)
 		self.windowTab.addTab(self.clusterListTab, "Cluster location")
 		self.windowTab.addTab(self.clusterProfileTab, "Cluster profile")
 		self.windowTab.addTab(self.configTab, "Configuration")
+		self.windowTab.addTab(self.trainingTab, "Training")
 		self.mainLayout.addWidget(self.windowTab)
 		self.setLayout(self.mainLayout)
 	def switch_cluster_and_tab(self, name):

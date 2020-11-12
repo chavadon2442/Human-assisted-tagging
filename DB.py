@@ -60,32 +60,6 @@ class AppDB(QWidget):
         query.exec("INSERT into DETAILS values(40,'termites')")
         query.exec("INSERT into DETAILS values(41,'wrong_label')")
 
-        ## GET directory from the application 
-        # dir = "Bottom_ViewImages"
-        # for folder in os.listdir(dir):
-        #     description = folder
-        #     query.exec("SELECT Tag_No FROM DETAILS WHERE Description = '{}' ".format(description))
-        
-        #     while query.next():
-
-        #         result = query.value(0).__str__()
-        #         print(result)
-        #         getdir = dir + '/' + folder 
-        #         for files in os.listdir(getdir):
-        #            query.exec("INSERT into Image values('{}','{}')".format(files,result))
-
-        ## BASIC GET IMAGE WITH TAGS SEARCH QUERY
-
-        # searchlist = []
-        # search_input = input('Do you want to search certain tags for images, Y/N ?')
-        # if search_input.lower() == 'y' or search_input.lower() == 'yes':
-            
-        #     queryy = int(input('Please enter your tag :  '))
-        #     query.exec("SELECT Image_name FROM IMAGE where Tag_no == '{}'".format(queryy))
-            
-        #     while query.next():
-        #         result = query.value(0)
-        #         searchlist.append(result)
     def query_alltag(self):
         query = QSqlQuery() 
         query.exec("SELECT Tag_No, Description FROM DETAILS")
@@ -108,12 +82,40 @@ class AppDB(QWidget):
                 while query.next():
                     result = query.value(0)
                 query.exec("INSERT into Image values ('{}','{}')".format(img_name,result))
+    def used_tag(self):
+        query = QSqlQuery() 
+        used_tags = []
+        tags_name = []
+        query.exec("SELECT Tag_No from Image")
+        while query.next():
+            result = query.value(0)
+            if result in used_tags:
+                pass
+            else:
+                used_tags.append(result)
+        for tags in used_tags:
+            query.exec("SELECT Description FROM DETAILS WHERE Tag_No = '{}'".format(tags))
+            while query.next():
+                tags_names = query.value(0)
 
-        
-        
-       
+                if tags_names in tags_name:
+                    pass
+                else:
+                    tags_name.append(tags_names)
+        return tags_name
 
-            
+    def image_with_tag(self,tags):
+        query = QSqlQuery() 
+        all_img = []
+        if len(tags) == 1:
+            query.exec("SELECT Tag_No FROM DETAILS WHERE Description = '{}' ".format(tags[0]))
+            while query.next():
+                result = query.value(0).__str__()
+            query.exec("SELECT Image_Name FROM Image WHERE Tag_No = '{}'".format(result))
+            while query.next():
+                img = query.value(0).__str__()
+                all_img.append(img)
+        return all_img
 # if __name__ == "__main__":
 #     app = QApplication(sys.argv)
 #     window = MainWindow()
