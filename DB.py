@@ -16,7 +16,7 @@ class AppDB(QWidget):
         query = QSqlQuery() 
         query.exec("CREATE TABLE DETAILS (Tag_No INTEGER PRIMARY KEY, Description TEXT)")
         query.exec("CREATE TABLE Image( Image_Name TEXT NOT NULL, Tag_No INT NOT NULL, PRIMARY KEY(Image_Name,Tag_No), FOREIGN KEY(Tag_No) REFERENCES DETAILS(Tag_No))")
-
+        query.exec("CREATE TABLE Garbage( Image_Name TEXT PRIMARY KEY, GOOD INT, BLUR INT, AMT_VISIBLE INT, OBS_AND_INTERPRET INT)")
         query.exec("INSERT into DETAILS values(2,'dry_neck_label')")
         query.exec("INSERT into DETAILS values(3,'pale_neck_label_but_not_dry')")
         query.exec("INSERT into DETAILS values(4,'label_has_scratch_but_not_dry')")

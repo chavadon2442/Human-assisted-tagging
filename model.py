@@ -117,10 +117,7 @@ class modelImage:
 			MAINPATH =  information["cluster_locations"]
 		return MAINPATH
 		
-	def get_views_clusters(self, index):
-		with open(self.storageLocation + "cluster_info.json") as configData:
-			information = json.load(configData)
-			MAINPATH =  information["cluster_locations"][index]
+	def get_views_clusters(self, MAINPATH):
 		#GET ALL DIRECTORIES
 		VIEWS = [files  for files in os.listdir(MAINPATH) if files.find(".") == -1]
 		VIEW_AND_CLUSTERS = dict()

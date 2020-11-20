@@ -31,10 +31,14 @@ class ClusterListTab(QWidget):
 		self.mainLayoutClusterList = QGridLayout()
 		#Location [row]
 		self.locationInputUI = RowInformtionWidget(self)
+		self.selectLocationButton = QPushButton("Browse location")
 		self.locationInputField = QLineEdit()
-		self.locationInputField.setText("D:\\Documents\\Capstone_Work\\Testing_Sample_keras\\ImageLocation")
+		self.locationInputField.setReadOnly(True)
+		self.locationInputField.setStyleSheet("color: black; background-color: rgba(0,0,0,0.15);")
+		self.selectLocationButton.clicked.connect(self.getDirectoryLocation)
 		self.locationInputUI.layout.addWidget(QLabel("Location:- "))
 		self.locationInputUI.layout.addWidget(self.locationInputField)
+		self.locationInputUI.layout.addWidget(self.selectLocationButton)
 		#Create structure [row]
 		self.creteStructureInputUI = RowInformtionWidget(self)
 		self.createStructureYes = QRadioButton("Yes")
@@ -118,6 +122,11 @@ class ClusterListTab(QWidget):
 
 	def ClusteringCompleted(self):
 		self.initiateClusterButton.setEnabled(True)
+
+	def getDirectoryLocation(self):
+		fileLocal = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
+		if(fileLocal != None and fileLocal != ""):
+			self.locationInputField.setText(fileLocal)
 
 	def clear_layout(self, layout):
 	#Code reference [ https://www.semicolonworld.com/question/58072/clear-all-widgets-in-a-layout-in-pyqt ]

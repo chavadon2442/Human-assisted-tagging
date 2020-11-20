@@ -48,12 +48,16 @@ class ClusterProfileTab(QWidget):
 		self.clusterInfoLayout = QGridLayout()
 		self.viewList = QComboBox()
 		self.clusterList = QComboBox()
-		self.listOfClusterLocation = QComboBox()
 		self.imageLabel = QLabel("Image Label: ")
+		self.clusterLocationWidget = QLineEdit("")
+		self.clusterLocationWidget.setStyleSheet("color: black; background-color: rgba(0,0,0,0.15);")
+		self.browseClusterButton = QPushButton("Browse")
+		self.clusterLocationWidget.setReadOnly(True)
+		self.browseClusterButton.clicked.connect(self.getDirectoryLocation)
 		self.viewList.activated.connect(self.setupClusterList)
-		self.listOfClusterLocation.activated.connect(self.getClusterDirectData)
 		self.clusterList.activated.connect(self.getPhoto)
-		self.clusterInfoLayout.addWidget(self.listOfClusterLocation,0,0,1,2)
+		self.clusterInfoLayout.addWidget(self.clusterLocationWidget,0,0)
+		self.clusterInfoLayout.addWidget(self.browseClusterButton,0,1)
 		self.clusterInfoLayout.addWidget(QLabel("View"), 1,0)
 		self.clusterInfoLayout.addWidget(self.viewList, 1,1)
 		self.clusterInfoLayout.addWidget(QLabel("Cluster"), 2,0)
@@ -85,19 +89,15 @@ class ClusterProfileTab(QWidget):
 		#setup
 		self.setLayout(self.mainLayout)
 
+
 	def __datasetup__(self):
-		self.setupClusterLocal()
-		self.getClusterDirectData()
+		newLocal = self.clusterLocationWidget.text()
+		if(os.path.exists(newLocal) == True):
+			self.viewList.clear()
+			self.mainData = self.model.get_views_clusters(newLocal)
+			[self.viewList.addItem(views) for views in self.mainData]
+			self.setupClusterList()
 
-	def setupClusterLocal(self):
-		self.listOfClusterLocation.clear()
-		[self.listOfClusterLocation.addItem(location) for location in self.model.getAllClusterLocal()]
-
-	def getClusterDirectData(self):
-		self.viewList.clear()
-		self.mainData = self.model.get_views_clusters(self.listOfClusterLocation.currentIndex())
-		[self.viewList.addItem(views) for views in self.mainData]
-		self.setupClusterList()
 
 	def setupClusterList(self):
 		self.clusterList.clear()
@@ -136,6 +136,12 @@ class ClusterProfileTab(QWidget):
 
 	def getCurrentClusterAndView(self):
 		return self.viewList.itemText(self.viewList.currentIndex()), self.clusterList.itemText(self.clusterList.currentIndex())
+
+	def getDirectoryLocation(self):
+		fileLocal = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
+		if(fileLocal != None and fileLocal != ""):
+			self.clusterLocationWidget.setText(fileLocal)
+			self.__datasetup__()
 
 	def clear_layout(self, layout):
 	#Code reference [ https://www.semicolonworld.com/question/58072/clear-all-widgets-in-a-layout-in-pyqt ]
