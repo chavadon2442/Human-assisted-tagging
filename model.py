@@ -211,16 +211,17 @@ class modelImage:
 			return False
 
 	def getAllEstimators(self):
-		estimators = all_estimators(type_filter='classifier')
-		clustersEstimators = all_estimators(type_filter='cluster')
-		transformers = all_estimators(type_filter='transformer')
+		datas = dict({})
+		for predic in ['classifier', 'cluster', 'transformer']:
+			datas[predic] = all_estimators(type_filter=predic)
 		madeFunctions = []
 		for name, obj in inspect.getmembers(Functions, inspect.isclass):
 			if(obj.__module__ == "clusterLogic.PipeModules.Functions" and name != "ImgPathToRGB"):
 				madeFunctions.append((name,obj))
-		return  madeFunctions + estimators 
+		datas["User created"] = madeFunctions
+		return datas
 		
-	def makePipeline(self, piplist, name):
+	def makePipeline(self, piplist, name, descript, view, tag, trainable):
 		filename = name + ".joblib"
 		try:
 			#We do this in order to make sure no such file exists, if it does it returns False
@@ -229,7 +230,6 @@ class modelImage:
 		except:
 			try:
 				piplist = [("ImgPathToRGB", Functions.ImgPathToRGB())] + piplist
-				print(piplist)
 				pipModel = Pipeline(piplist)
 				joblib.dump(pipModel,os.path.join(self.modelLocation, filename))
 				return 0

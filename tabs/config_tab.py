@@ -34,7 +34,47 @@ class PipeLineWidget(QWidget):
             label.setFlags(QtCore.Qt.ItemIsEnabled)
             self.paramsTable.setItem(0,i,label)
             self.paramsTable.setItem(1,i,value)
-        
+
+class filterPipeItem(QWidget):
+    def __init__(self, dataDict):
+        super(filterPipeItem, self).__init__()
+        self.data = dataDict
+        self.layout = QGridLayout()
+        self.setLayout(self.layout)
+        #Items
+        self.typeList = QComboBox()
+        self.estmList = QComboBox()
+        self.typeList.addItems(self.data.keys())
+        self.setData()
+        self.typeList.activated.connect(self.setData)
+        self.estmList.activated.connect(self.setEstm)
+        #add items to layout
+        self.layout.addWidget(QLabel("Type: "), 5, 0)
+        self.layout.addWidget(self.typeList, 5, 1)
+        self.layout.addWidget(QLabel("Function: "), 5, 2)
+        self.layout.addWidget(self.estmList, 5, 3)
+        self.layout.addWidget(QLabel("Params: "), 5, 4)
+        self.layout.addWidget(QPushButton("select"), 5, 5)
+    def setData(self):
+        self.Piptype = self.typeList.itemText(self.typeList.currentIndex())
+        try:
+            self.estmList.clear()
+        except:
+            pass
+        itemList = [items[0] for items in self.data[self.Piptype]]
+        self.estmList.addItems(itemList)
+        self.setEstm()
+
+    def setEstm(self):
+        estName = self.estmList.itemText(self.estmList.currentIndex())
+        for items in self.data[self.Piptype]:
+            if(items[0] == estName):
+                self.estimator = items
+                break
+    def getVals(self):
+        return self.estimator
+
+
 class ConfigTab(QWidget):
     def __init__(self,parent, threadpool):
         super(ConfigTab, self).__init__(parent)
@@ -43,139 +83,85 @@ class ConfigTab(QWidget):
         self.threadpool = threadpool
         self.__UIsetup__()
     def __UIsetup__(self):
+        #Main: init and setting layout
         self.mainLayoutClusterList = QVBoxLayout()
         self.mainLayoutClusterList.setAlignment(QtCore.Qt.AlignCenter)
-        self.queryGroupBox = QGroupBox("Query")
-        self.queryGroupBox.setMaximumWidth(1000)
-        self.queryGroupBox.setMaximumHeight(1000)
-        self.horizontalGroupBox = QGroupBox("Configuration")
-        self.horizontalGroupBox.setMaximumWidth(1000)
-        self.horizontalGroupBox.setMaximumHeight(1000)
-        self.advanceConfigGroupBox = QGroupBox("Advance config")
-        self.advanceConfigGroupBox.setMaximumWidth(1000)
-        self.advanceConfigGroupBox.setMaximumHeight(1000)
-        layout = QGridLayout()
-        querylayout = QGridLayout()
-        mainConfigLayout = QVBoxLayout()
-        configInfoLayout = QVBoxLayout()
-        self.configLayout = QVBoxLayout()
-        configButtonLayout = QHBoxLayout()
-        mainConfigLayout.addLayout(configInfoLayout)
-        mainConfigLayout.addLayout(self.configLayout)
-        mainConfigLayout.addLayout(configButtonLayout)
-        self.configNameInput = QLineEdit("")
-        layout.addWidget(QLabel("Name: "),0,0)
-        layout.addWidget(self.configNameInput,0,1)
-        views = [vw + "_view"for vw in ["bottom","top", "left", "right"]]
-        self.widgetMapConfig = dict()
-        for index, vw in enumerate(views):
-            widMap  = dict()
-            modelList = QComboBox()
-            kValInput = QLineEdit("10")
-            modelList.addItem("resnet50")
-            modelList.addItem("resnet152")
-            modelList.addItem("resnet101")
-            modelList.addItem("inception")
-            modelList.addItem("nasnet")
-            layout.addWidget(QLabel(vw),index + 1,0,1,3)
-            layout.addWidget(QLabel("Model"),index + 1,4,1,1)
-            layout.addWidget(modelList,index + 1,5,1,2)
-            layout.addWidget(QLabel("K value"),index + 1,7,1,1)
-            layout.addWidget(kValInput,index + 1,8,1,2)
-            widMap["model"] = modelList
-            widMap["k"] = kValInput
-            self.widgetMapConfig[vw] = widMap
-        self.createConfigButton = QPushButton("Create")
-        self.createConfigButton.clicked.connect(self.createConfig)
-        self.consoleOutput = QLabel("")
-        self.consoleOutput.setMaximumHeight(50)
-        layout.addWidget(self.createConfigButton, len(views)+1, 0)
-        layout.addWidget(self.consoleOutput, len(views)+2, 0,1,3)
-        
-        #Query layout
-        self.tagListWidget = QListWidget()
-        self.outputLocationWidget = QLineEdit("")
-        self.initiateQueryWidget = QPushButton("Start query")
-        tags  = self.model.DB.query_alltag()
-        for tg in tags:
-            self.tagListWidget.addItem(tg)
-        self.outputLocationWidget.setMaximumHeight(300)
-        querylayout.addWidget(QLabel("Location to be stored:"), 0,0)
-        querylayout.addWidget(self.outputLocationWidget, 1,0)
-        querylayout.addWidget(self.tagListWidget, 2,0)
-        querylayout.addWidget(self.initiateQueryWidget, 3,0)
-        #Advance config 
-        self.configNameWidget = QLineEdit("")
-        self.errTextMessageWidget = QLabel("")
-        self.configLayout.addWidget(PipeLineWidget(self.model.getAllEstimators()))
-        self.addMorePipeReq = QPushButton("+")
-        self.removeMorePipeReq = QPushButton("-")
-        self.makePipeWidget = QPushButton("Ok")
-        self.addMorePipeReq.clicked.connect(self.addMorePipe)
-        self.removeMorePipeReq.clicked.connect(self.removePipe)
-        self.makePipeWidget.clicked.connect(self.makePipeline)
-        configButtonLayout.addWidget(self.addMorePipeReq)
-        configButtonLayout.addWidget(self.removeMorePipeReq)
-        configButtonLayout.addWidget(self.makePipeWidget)
-        configInfoLayout.addWidget(self.configNameWidget)
-        configInfoLayout.addWidget(self.errTextMessageWidget)
-        #Setup main layout and widgets
-        self.queryGroupBox.setLayout(querylayout)
-        self.advanceConfigGroupBox.setLayout(mainConfigLayout)
-        self.horizontalGroupBox.setLayout(layout)
-        self.mainLayoutClusterList.addWidget(self.horizontalGroupBox)
-        #self.mainLayoutClusterList.addWidget(self.queryGroupBox) 
-        self.mainLayoutClusterList.addWidget(self.advanceConfigGroupBox)
         self.setLayout(self.mainLayoutClusterList)
+        ##Filter: groupbox
+        self.filterGroupBox = QGroupBox("Filter")
+        self.filterGroupBox.setMaximumWidth(1000)
+        self.filterGroupBox.setMaximumHeight(1500)
+        self.filterLayout = QGridLayout()
+        ###Filter: items
+        self.filterNameUI = QLineEdit("")
+        self.filterViewDropDown = QComboBox()
+        self.filterTagDropDown  = QComboBox()
+        self.filterAddPipeButton  = QPushButton("add")
+        self.filterRemovePipeButton  = QPushButton("remove")
+        self.filterCreatePipeButton  = QPushButton("Create")
+        self.filterTrainableCheck = QCheckBox("Trainable")
+        self.filterDescriptionBox = QTextEdit()
+        ###Filter: item reaction!
+        self.filterAddPipeButton.clicked.connect(self.addPipe)
+        self.filterRemovePipeButton.clicked.connect(self.removePipe)
+        self.filterCreatePipeButton.clicked.connect(self.createPipe)
+        ###Filter: add item to dropdown
+        self.filterViewDropDown.addItems(["Top", "Bottom", "Left", "Right"])
+        self.filterTagDropDown.addItems(self.model.DB.query_alltag())
+        ###Filter: Adding items to layout
+        self.filterLayout.addWidget(QLabel("Name: "), 0,0)
+        self.filterLayout.addWidget(self.filterNameUI, 0,1,1,4)
+        self.filterLayout.addWidget(QLabel("View: "), 1,0)
+        self.filterLayout.addWidget(self.filterViewDropDown, 1,1)
+        self.filterLayout.addWidget(QLabel("Tag: "), 1,2)
+        self.filterLayout.addWidget(self.filterTagDropDown, 1,3)
+        self.filterLayout.addWidget(self.filterTrainableCheck, 1,4)
+        self.filterLayout.addWidget(QLabel("Description: "), 2,0)
+        self.filterLayout.addWidget(self.filterDescriptionBox, 3,0,2,5)
+        ####Filter: Items for pipes!
+        self.filterPipeScroll = QScrollArea()
+        self.filterPipeWidget = QWidget()
+        self.filterPipeLayout = QVBoxLayout()
+        self.filterPipeScroll.setMinimumHeight(500)
+        self.filterPipeScroll.setMaximumHeight(750)
+        self.filterPipeScroll.setMinimumWidth(500)
+        self.filterPipeScroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+        self.filterPipeScroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.filterPipeScroll.setWidgetResizable(True)
+        self.filterPipeWidget.setLayout(self.filterPipeLayout)
+        self.filterPipeScroll.setWidget(self.filterPipeWidget)
+        self.filterLayout.addWidget(self.filterPipeScroll, 5,0,2,5)
+        self.filterLayout.addWidget(self.filterAddPipeButton, 7,0,1,1)
+        self.filterLayout.addWidget(self.filterRemovePipeButton, 7,1,1,1)
+        self.filterLayout.addWidget(self.filterCreatePipeButton, 7,4,1,1)
+        #####Filter: Adding items to pipes
+        self.filterPipeList = []
+        ###Filter: Setting layout and adding to main layout
+        self.filterGroupBox.setLayout(self.filterLayout)
+        self.mainLayoutClusterList.addWidget(self.filterGroupBox)
 
 
-    def createConfig(self):
-        config = dict()
-        for vws in self.widgetMapConfig:
-            vwDict = dict()
-            for items in self.widgetMapConfig[vws]:
-                widget = self.widgetMapConfig[vws][items]
-                if(items == "model"):
-                    value = widget.itemText(widget.currentIndex())
-                else:
-                    value = int(widget.text())
-                vwDict[items] = value
-            config[vws] = vwDict
-            vwDict["focusPoint"] = ""
-            vwDict["isSave"] = False
-        if(self.configNameInput.text() == ""):
-            self.consoleOutput.setText("Please give this config a name")
-            return False
-        result = self.model.createNewConfig(name=self.configNameInput.text(), mapVal=config)
-        if(result == False):
-            self.consoleOutput.setText("Config name already exists")
-        else:
-            self.consoleOutput.setText("Successful!")
-    
-    def addMorePipe(self):
-        self.configLayout.addWidget(PipeLineWidget(self.model.getAllEstimators()))
+    def addPipe(self):
+        newPipe = filterPipeItem(dataDict=self.model.getAllEstimators())
+        self.filterPipeList.append(newPipe)
+        self.filterPipeLayout.addWidget(newPipe)
 
     def removePipe(self):
-        amount = self.configLayout.count()
-        if(amount > 0):
-            self.configLayout.itemAt(amount-1).widget().setParent(None)
-    def makePipeline(self):
-        amount = self.configLayout.count()
-        name = self.configNameWidget.text()
-        if(amount > 0 and name != ""):
-            pipList = []
-            for i in range(amount):
-                pipList.append((self.configLayout.itemAt(i).widget().name,self.configLayout.itemAt(i).widget().model))
-            makePipLine = self.model.makePipeline(pipList, name)
-            if( makePipLine < 0 ):
-                if(makePipLine == -1):
-                    self.errTextMessageWidget.setText("Model with this name already exists!")
-                if(makePipLine == -2):
-                    self.errTextMessageWidget.setText("Failed to make pipeline!")
-            else:
-                self.errTextMessageWidget.setText("Done")
-        else:
-            self.errTextMessageWidget.setText("No item in config or name not given")
+        try:
+            targetWidget = self.filterPipeList.pop()
+            targetWidget.setParent(None)
+        except IndexError:
+            pass
+    
+    def createPipe(self):
+        pipline = []
+        for items in self.filterPipeList:
+            pipline.append(items.getVals())
+        name = self.filterNameUI.text()
+        description = self.filterDescriptionBox.toPlainText()
+        trainable = self.filterTrainableCheck.isChecked()
+        view = self.filterViewDropDown.itemText(self.filterViewDropDown.currentIndex())
+        tag = self.filterTagDropDown.itemText(self.filterTagDropDown.currentIndex())
 
     def clear_layout(self, layout):
     #Code reference [ https://www.semicolonworld.com/question/58072/clear-all-widgets-in-a-layout-in-pyqt ]
