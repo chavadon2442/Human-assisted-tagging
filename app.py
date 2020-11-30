@@ -7,6 +7,7 @@ from tabs.config_tab import ConfigTab
 from tabs.training_tab import TrainTab
 import os
 import sys
+from DB2 import databaseManager
 
 class MainWindow(QWidget):
 	def __init__(self, width, height, title, pos = [0,0]):
@@ -18,16 +19,17 @@ class MainWindow(QWidget):
 		self.__setupUI__() 
 		
 	def __setupUI__(self):
+		DB = databaseManager()
 		self.mainLayout = QVBoxLayout()
 		self.windowTab = QTabWidget(self)
-		self.clusterListTab = ClusterListTab(self, threadpool=self.threadPool)
-		self.clusterProfileTab = ClusterProfileTab(self, threadpool=self.threadPool)
-		self.configTab = ConfigTab(self, threadpool=self.threadPool)
-		self.trainingTab = TrainTab(self, threadpool=self.threadPool)
+		self.clusterListTab = ClusterListTab(self, threadpool=self.threadPool, db=DB)
+		self.clusterProfileTab = ClusterProfileTab(self, threadpool=self.threadPool, db=DB)
+		self.configTab = ConfigTab(self, threadpool=self.threadPool, db=DB)
+		#self.trainingTab = TrainTab(self, threadpool=self.threadPool)
 		self.windowTab.addTab(self.clusterListTab, "Cluster location")
 		self.windowTab.addTab(self.clusterProfileTab, "Cluster profile")
 		self.windowTab.addTab(self.configTab, "Configuration")
-		self.windowTab.addTab(self.trainingTab, "Training")
+		#self.windowTab.addTab(self.trainingTab, "Training")
 		self.mainLayout.addWidget(self.windowTab)
 		self.setLayout(self.mainLayout)
 	def switch_cluster_and_tab(self, name):

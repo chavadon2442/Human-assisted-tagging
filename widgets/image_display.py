@@ -7,7 +7,7 @@ import qimage2ndarray
 class imageDisplay(QLabel):
 	def __init__(self):
 		super(imageDisplay, self).__init__()
-		self.model = model.modelImage()
+		#self.model = model.modelImage()
 		self.widthSize = 1300
 		self.__display__()
 		self.__setupFuncs__()
@@ -46,14 +46,14 @@ class imageDisplay(QLabel):
 	def setImg(self):
 		image = QPixmap(self.imgData).scaledToWidth(self.widthSize)
 		self.ImageLabel.setPixmap(image)
-	def brightness(self, amt):
-		QImageInArr = qimage2ndarray.rgb_view(self.imgData)
-		image = self.model.brightness(QImageInArr,isArr=True, beta=amt)
-		self.imgData = qimage2ndarray.array2qimage(image)
-		self.setImg()
-	def quantizeReq(self):
-		QImageInArr = qimage2ndarray.rgb_view(self.imgData)
-		image = self.model.quant(QImageInArr,cluster=4,isArr=True)
-		self.imgData = qimage2ndarray.array2qimage(image)
-		self.setImg()
+	# def brightness(self, amt):
+	# 	QImageInArr = qimage2ndarray.rgb_view(self.imgData)
+	# 	image = self.model.brightness(QImageInArr,isArr=True, beta=amt)
+	# 	self.imgData = qimage2ndarray.array2qimage(image)
+	# 	self.setImg()
+	# def quantizeReq(self):
+	# 	QImageInArr = qimage2ndarray.rgb_view(self.imgData)
+	# 	image = self.model.quant(QImageInArr,cluster=4,isArr=True)
+	# 	self.imgData = qimage2ndarray.array2qimage(image)
+	# 	self.setImg()
 		

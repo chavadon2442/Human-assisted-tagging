@@ -7,12 +7,12 @@ import model
 import os
 
 class ClusterProfileTab(QWidget):
-	def __init__(self,parent, threadpool):
+	def __init__(self,parent, threadpool, db):
 		super(ClusterProfileTab, self).__init__(parent)
 		self.parent = parent
 		self.clusterName = ""
 		self.type = ""
-		self.model = model.modelImage()
+		self.model = model.modelImage(db)
 		self.chosenView = None
 		self.threadpool = threadpool
 		self.__UIsetup__()

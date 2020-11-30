@@ -19,9 +19,9 @@ class RowInformtionWidget(QWidget):
 
 
 class ClusterListTab(QWidget):
-	def __init__(self,parent, threadpool):
+	def __init__(self,parent, threadpool, db):
 		super(ClusterListTab, self).__init__(parent)
-		self.model = model.modelImage()
+		self.model = model.modelImage(db)
 		self.parent = parent
 		self.threadpool = threadpool
 		self.__UIsetup__()		

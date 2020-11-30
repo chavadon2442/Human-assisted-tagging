@@ -12,7 +12,8 @@ from clusterLogic.PipeModules import Functions
 import time
 import subprocess
 from psutil import virtual_memory
-from DB import AppDB
+# from DB import AppDB
+from DB2 import databaseManager
 from sklearn.pipeline import Pipeline, make_pipeline
 import joblib 
 import inspect
@@ -45,11 +46,11 @@ class cluster:
 
 
 class modelImage:
-	def __init__(self):
+	def __init__(self, DB):
 		self.storageLocation = "./system information/"
 		self.configLocation = "./system information/Config"
 		self.modelLocation = "./system information/models"
-		self.DB = AppDB()
+		self.DB = DB
 	def get_cluster_list(self, listLocation):
 		pass
 	def request_cluster_images(self, clusterLocation, amount="all"):
@@ -223,18 +224,14 @@ class modelImage:
 		
 	def makePipeline(self, piplist, name, descript, view, tag, trainable):
 		filename = name + ".joblib"
-		try:
-			#We do this in order to make sure no such file exists, if it does it returns False
-			joblib.load(os.path.join(self.modelLocation, filename))
-			return -1
-		except:
-			try:
-				piplist = [("ImgPathToRGB", Functions.ImgPathToRGB())] + piplist
-				pipModel = Pipeline(piplist)
-				joblib.dump(pipModel,os.path.join(self.modelLocation, filename))
-				return 0
-			except:
-				return -2
+		# try:
+		self.DB.createNewFilter(pipName=name,view=view, tag=tag, description=descript, trainable=int(trainable == True))
+		piplist = [("ImgPathToRGB", Functions.ImgPathToRGB())] + piplist
+		pipModel = Pipeline(piplist)
+		joblib.dump(pipModel,os.path.join(self.modelLocation, filename))
+		return 0
+		# except:
+		# 	return -1
 	def getAllPipeConfig(self):
 		return os.listdir(self.modelLocation)
 

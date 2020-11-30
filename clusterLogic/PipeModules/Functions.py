@@ -1,6 +1,6 @@
 import cv2 
 from sklearn.base import TransformerMixin
-from sklearn.base import BaseEstimator
+from sklearn.base import BaseEstimator, ClassifierMixin
 from keras.applications.resnet import ResNet101,preprocess_input
 import numpy as np
 import os

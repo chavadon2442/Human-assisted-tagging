@@ -17,6 +17,7 @@ class AppDB(QWidget):
         query.exec("CREATE TABLE DETAILS (Tag_No INTEGER PRIMARY KEY, Description TEXT)")
         query.exec("CREATE TABLE Image( Image_Name TEXT NOT NULL, Tag_No INT NOT NULL, PRIMARY KEY(Image_Name,Tag_No), FOREIGN KEY(Tag_No) REFERENCES DETAILS(Tag_No))")
         query.exec("CREATE TABLE Garbage( Image_Name TEXT PRIMARY KEY, GOOD INT, BLUR INT, AMT_VISIBLE INT, OBS_AND_INTERPRET INT)")
+        query.exec("CREATE TABLE Filter ( filter_name TEXT PRIMARY KEY, View TEXT, Tag TEXT, Description TEXT, Trainable INT, Performance REAL, AverageTimePerPhoto REAL, sessions INT)")
         query.exec("INSERT into DETAILS values(2,'dry_neck_label')")
         query.exec("INSERT into DETAILS values(3,'pale_neck_label_but_not_dry')")
         query.exec("INSERT into DETAILS values(4,'label_has_scratch_but_not_dry')")
@@ -116,6 +117,21 @@ class AppDB(QWidget):
                 img = query.value(0).__str__()
                 all_img.append(img)
         return all_img
+    
+    def getAllFilter(self):
+        query = QSqlQuery() 
+        query.exec("SELECT * FROM filter")
+        filters = []
+        for row_number, row_data in enumerate(query.result()): 
+            for column_number, data in enumerate(row_data): 
+                print(column_number , data)
+        return filters
+
+
+    def createNewFilter(self,pipName,view, tag, description, trainable, performance=0, averageTime=0, ses=0):
+        query = QSqlQuery() 
+        query.exec("INSERT into filter values ('{}','{}','{}','{}','{}','{}','{}','{}')".format(pipName, view, tag, description, trainable, performance, averageTime, ses))
+
 # if __name__ == "__main__":
 #     app = QApplication(sys.argv)
 #     window = MainWindow()
