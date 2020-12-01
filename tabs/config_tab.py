@@ -72,8 +72,13 @@ class filterPipeItem(QWidget):
                 self.estimator = items
                 break
     def getVals(self):
-        return self.estimator
+        return (self.estimator[0], self.estimator[1]())
 
+class RowWidget(QWidget):
+    def __init__(self, parent):
+        super(RowWidget, self).__init__(parent)
+        self.layout = QGridLayout()
+        self.setLayout(self.layout)
 
 class ConfigTab(QWidget):
     def __init__(self,parent, threadpool, db):
@@ -85,7 +90,7 @@ class ConfigTab(QWidget):
     def __UIsetup__(self):
         #Main: init and setting layout
         self.mainLayoutClusterList = QHBoxLayout()
-        self.mainLayoutClusterList.setAlignment(QtCore.Qt.AlignCenter)
+        #self.mainLayoutClusterList.setAlignment(QtCore.Qt.AlignCenter)
         self.setLayout(self.mainLayoutClusterList)
         ##Filter: groupbox
         self.filterGroupBox = QGroupBox("Filter")
@@ -101,26 +106,27 @@ class ConfigTab(QWidget):
         self.filterCreatePipeButton  = QPushButton("Create")
         self.filterTrainableCheck = QCheckBox("Trainable")
         self.filterDescriptionBox = QTextEdit()
+        self.filterDescriptionBox.setStyleSheet("font-size: 25px; font-family: "'Times New Roman'", Times, serif; font-weight: 350;")
         self.filterConsole = QLabel()
         ###Filter: item reaction!
         self.filterAddPipeButton.clicked.connect(self.addPipe)
         self.filterRemovePipeButton.clicked.connect(self.removePipe)
         self.filterCreatePipeButton.clicked.connect(self.createPipe)
-        ###Filter: add item to dropdown
-        self.filterViewDropDown.addItems(["Top", "Bottom", "Left", "Right"])
+        ###Filter: add item to dropdown#
+        #self.filterViewDropDown.addItems(views)
         tags = ["ANY"] + self.model.DB.query_alltag() 
         self.filterTagDropDown.addItems(tags)
         ###Filter: Adding items to layout
         self.filterLayout.addWidget(QLabel("Name: "), 0,0)
         self.filterLayout.addWidget(self.filterNameUI, 0,1,1,4)
-        self.filterLayout.addWidget(QLabel("View: "), 1,0)
-        self.filterLayout.addWidget(self.filterViewDropDown, 1,1)
-        self.filterLayout.addWidget(QLabel("Tag: "), 1,2)
-        self.filterLayout.addWidget(self.filterTagDropDown, 1,3)
-        self.filterLayout.addWidget(self.filterTrainableCheck, 1,4)
+        #self.filterLayout.addWidget(QLabel("View: "), 1,0)
+        #self.filterLayout.addWidget(self.filterViewDropDown, 1,1)
+        self.filterLayout.addWidget(QLabel("Focus tag: "), 1,0)
+        self.filterLayout.addWidget(self.filterTagDropDown, 1,1)
+        self.filterLayout.addWidget(self.filterTrainableCheck, 1,3)
         self.filterLayout.addWidget(QLabel("Description: "), 2,0)
-        self.filterLayout.addWidget(self.filterDescriptionBox, 3,0,2,5)
-        self.filterLayout.addWidget(self.filterConsole, 8,0)
+        self.filterLayout.addWidget(self.filterDescriptionBox, 2,1,1,4)
+        self.filterLayout.addWidget(self.filterConsole, 5,0)
         ####Filter: Items for pipes!
         self.filterPipeScroll = QScrollArea()
         self.filterPipeWidget = QWidget()
@@ -143,9 +149,9 @@ class ConfigTab(QWidget):
 
         ##TESTING FILTER:
         self.testFilterBox = QGroupBox("Test Filter")
-        self.testFilterBox.setMaximumWidth(1000)
-        self.testFilterBox.setMaximumHeight(1500)
-        self.testFilterLayout = QGridLayout()
+        self.testFilterBox.setMaximumWidth(500)
+        self.testFilterBox.setMaximumHeight(500)
+        self.testFilterLayout = QVBoxLayout()
         ##TESTING FILTER: ITEMS
         self.selectLocationButton = QPushButton("Browse location")
         self.locationInputField = QLineEdit()
@@ -159,19 +165,32 @@ class ConfigTab(QWidget):
         self.testFilterUpdateButton.clicked.connect(self.updateFilterList)
         self.testFilterDescription.setReadOnly(True)
         self.testFilterDescription.setStyleSheet("color: black; background-color: rgba(0,0,0,0.15);")
+        ##Setting up widgets
+        row1 = RowWidget(self)
+        row1.layout.addWidget(QLabel("Choose filter: "), 0, 0)
+        row1.layout.addWidget(QComboBox(), 0, 1)
+        row1.layout.addWidget(QPushButton("Set params"), 0, 2)
+        row2 = RowWidget(self)
+        row2.layout.addWidget(self.locationInputField, 0, 0)
+        row2.layout.addWidget(self.selectLocationButton, 0, 1)
+        row3 = RowWidget(self)
+        row3.layout.addWidget(QLabel("Focus: "), 0, 0)
+        row3.layout.addWidget(QLabel("ANY"), 0, 1)
+        row4 = RowWidget(self)
+        row4.layout.addWidget(QCheckBox("Top"), 0, 0)
+        row4.layout.addWidget(QCheckBox("Bottom"), 0, 1)
+        row4.layout.addWidget(QCheckBox("Left"), 0, 2)
+        row4.layout.addWidget(QCheckBox("Right"), 0, 3)
+        row5 = RowWidget(self)  
+        row5.layout.addWidget(QLabel("Description: "), 0, 0)
+        row5.layout.addWidget(self.testFilterDescription, 0, 1)
         ##TESTING FILTER: add to layout
-        
-        self.testFilterLayout.addWidget(self.locationInputField,0,0)
-        self.testFilterLayout.addWidget(self.selectLocationButton,0,1)
-        self.testFilterLayout.addWidget(QLabel("View: "),1,0)
-        self.testFilterLayout.addWidget(self.testFilterViewOption,1,1)
-        self.testFilterLayout.addWidget(QLabel("Pipeline: "),2,0)
-        self.testFilterLayout.addWidget(self.testFilterPiplineOption,2,1)
-        self.testFilterLayout.addWidget(QLabel("Tag: "),3,0)
-        self.testFilterLayout.addWidget(self.testFilterTagName,3,1)
-        self.testFilterLayout.addWidget(QLabel("Description: "),4,0)
-        self.testFilterLayout.addWidget(self.testFilterDescription,5,0)
-        self.testFilterLayout.addWidget(self.testFilterUpdateButton,6,0)
+        self.testFilterLayout.addWidget(row1)
+        self.testFilterLayout.addWidget(row3)
+        self.testFilterLayout.addWidget(row2)
+        self.testFilterLayout.addWidget(row4)
+        self.testFilterLayout.addWidget(row5)
+        self.testFilterLayout.addWidget(QPushButton("Start filtering!"))
 
 
         ###Filter: Setting layout and adding to main layout
@@ -200,10 +219,8 @@ class ConfigTab(QWidget):
         name = self.filterNameUI.text()
         description = self.filterDescriptionBox.toPlainText()
         trainable = self.filterTrainableCheck.isChecked()
-        view = self.filterViewDropDown.itemText(self.filterViewDropDown.currentIndex())
         tag = self.filterTagDropDown.itemText(self.filterTagDropDown.currentIndex())
-        create_req = self.model.makePipeline(piplist=pipline, name=name, descript=description, view=view, tag=tag, trainable=trainable)
-        print(create_req)
+        create_req = self.model.makePipeline(piplist=pipline, name=name, descript=description, tag=tag, trainable=int(trainable == True))
         if(create_req == 0):
             self.resetAll()
         elif(create_req == -1):

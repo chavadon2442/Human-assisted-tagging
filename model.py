@@ -222,16 +222,23 @@ class modelImage:
 		datas["User created"] = madeFunctions
 		return datas
 		
-	def makePipeline(self, piplist, name, descript, view, tag, trainable):
+	def makePipeline(self, piplist, name, descript, tag, trainable):
 		filename = name + ".joblib"
-		# try:
-		self.DB.createNewFilter(pipName=name,view=view, tag=tag, description=descript, trainable=int(trainable == True))
-		piplist = [("ImgPathToRGB", Functions.ImgPathToRGB())] + piplist
-		pipModel = Pipeline(piplist)
-		joblib.dump(pipModel,os.path.join(self.modelLocation, filename))
+		try:
+			self.DB.modifyTable("INSERT into Filter VALUES (?,?,?,?)", (name, tag, descript, trainable))
+			piplist = [("ImgPathToRGB", Functions.ImgPathToRGB())] + piplist
+			pipModel = Pipeline(piplist)
+			paramDict = pipModel.get_params()
+			joblib.dump(pipModel,os.path.join(self.modelLocation, filename))
+			paramLoc = os.path.join(self.modelLocation, name+"_PARAMS")
+			if (os.path.exists(paramLoc) == False):
+				os.mkdir(paramLoc)
+			filename = os.path.join(paramLoc, "DEFAULT_PARAMS.joblib")
+			joblib.dump(paramDict, filename)
+			#self.DB.createNewFilter(pipName=name,view=view, tag=tag, description=descript, trainable=int(trainable == True))
+		except:
+			return -1
 		return 0
-		# except:
-		# 	return -1
 	def getAllPipeConfig(self):
 		return os.listdir(self.modelLocation)
 
