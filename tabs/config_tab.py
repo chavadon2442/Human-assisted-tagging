@@ -4,7 +4,7 @@ from PyQt5 import Qt,QtCore, QtGui
 import model
 from functools import partial
 import json
-
+import os
 class PipeLineWidget(QWidget):
     def __init__(self, itemList):
         super(PipeLineWidget, self).__init__()
@@ -155,32 +155,45 @@ class ConfigTab(QWidget):
         ##TESTING FILTER: ITEMS
         self.selectLocationButton = QPushButton("Browse location")
         self.locationInputField = QLineEdit()
+        self.filterListOption = QComboBox()
+        self.filterParamListOptions = QComboBox()
+        self.filterParamDetailButton = QPushButton("See Param")
         self.locationInputField.setReadOnly(True)
         self.locationInputField.setStyleSheet("color: black; background-color: rgba(0,0,0,0.15);")
         self.testFilterViewOption = QComboBox()
         self.testFilterPiplineOption = QComboBox()
-        self.testFilterTagName = QLabel()
+        self.testFilterFocusName = QLabel()
         self.testFilterDescription = QTextEdit()
-        self.testFilterUpdateButton = QPushButton("Update")
-        self.testFilterUpdateButton.clicked.connect(self.updateFilterList)
+        self.testFilterViewOption = QComboBox()
+        self.startFilteringButton = QPushButton("Start filtering!")
         self.testFilterDescription.setReadOnly(True)
         self.testFilterDescription.setStyleSheet("color: black; background-color: rgba(0,0,0,0.15);")
+        ##adding data to widgets
+        self.startFilteringButton.clicked.connect(self.startFilteringProcess)
+        view = self.model.DB.query("SELECT * FROM Image_views")
+        [self.testFilterViewOption.addItem(v[0]) for v in view]
+        #self.testFilterViewOption.addItems(view)
+        self.selectLocationButton.clicked.connect(self.getDirectoryLocation)
+        self.filterParamDict = self.model.getFilterAndParams()
+        self.filterListOption.addItems(self.filterParamDict.keys())
+        self.setupFilterInfo()
+        self.filterListOption.activated.connect(self.setupFilterInfo)
         ##Setting up widgets
         row1 = RowWidget(self)
         row1.layout.addWidget(QLabel("Choose filter: "), 0, 0)
-        row1.layout.addWidget(QComboBox(), 0, 1)
-        row1.layout.addWidget(QPushButton("Set params"), 0, 2)
+        row1.layout.addWidget(self.filterListOption, 0, 1)
+        row1.layout.addWidget(QLabel("Choose params"), 0, 2)
+        row1.layout.addWidget(self.filterParamListOptions, 0, 3)
+        row1.layout.addWidget(self.filterParamDetailButton , 0, 4)
         row2 = RowWidget(self)
         row2.layout.addWidget(self.locationInputField, 0, 0)
         row2.layout.addWidget(self.selectLocationButton, 0, 1)
         row3 = RowWidget(self)
         row3.layout.addWidget(QLabel("Focus: "), 0, 0)
-        row3.layout.addWidget(QLabel("ANY"), 0, 1)
+        row3.layout.addWidget(self.testFilterFocusName, 0, 1)
         row4 = RowWidget(self)
-        row4.layout.addWidget(QCheckBox("Top"), 0, 0)
-        row4.layout.addWidget(QCheckBox("Bottom"), 0, 1)
-        row4.layout.addWidget(QCheckBox("Left"), 0, 2)
-        row4.layout.addWidget(QCheckBox("Right"), 0, 3)
+        row4.layout.addWidget(QLabel("Choose view"), 0, 0)
+        row4.layout.addWidget(self.testFilterViewOption, 0, 1)
         row5 = RowWidget(self)  
         row5.layout.addWidget(QLabel("Description: "), 0, 0)
         row5.layout.addWidget(self.testFilterDescription, 0, 1)
@@ -190,7 +203,7 @@ class ConfigTab(QWidget):
         self.testFilterLayout.addWidget(row2)
         self.testFilterLayout.addWidget(row4)
         self.testFilterLayout.addWidget(row5)
-        self.testFilterLayout.addWidget(QPushButton("Start filtering!"))
+        self.testFilterLayout.addWidget(self.startFilteringButton)
 
 
         ###Filter: Setting layout and adding to main layout
@@ -236,6 +249,29 @@ class ConfigTab(QWidget):
 
     def updateFilterList(self):
         print(self.model.DB.getAllFilter())
+
+    def setupFilterInfo(self):
+        curFilter = self.filterListOption.itemText(self.filterListOption.currentIndex())
+        params = self.filterParamDict[curFilter]["params"]
+        if(self.filterParamListOptions.count() > 0 ):
+            self.filterParamListOptions.clear()
+        self.filterParamListOptions.addItems(params)
+        self.testFilterFocusName.setText(self.filterParamDict[curFilter]["focus"])
+        self.testFilterDescription.setPlainText(self.filterParamDict[curFilter]["descript"])
+
+    def getDirectoryLocation(self):
+        fileLocal = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
+        if(fileLocal != None and fileLocal != ""):
+            self.locationInputField.setText(fileLocal)
+
+    def startFilteringProcess(self):
+        curFilter = self.filterListOption.itemText(self.filterListOption.currentIndex())
+        curParam = self.filterParamListOptions.itemText(self.filterParamListOptions.currentIndex())
+        selectedView = self.testFilterViewOption.itemText(self.testFilterViewOption.currentIndex())
+        filterFile = self.model.getAndSetFilter(curFilter, curParam)
+        imageLocation = os.path.join(self.locationInputField.text(), selectedView)
+        filterThread = model.FilteringThread(filterFile, imageLocation)
+        self.threadpool.start(filterThread)
 
     def clear_layout(self, layout):
     #Code reference [ https://www.semicolonworld.com/question/58072/clear-all-widgets-in-a-layout-in-pyqt ]

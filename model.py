@@ -230,7 +230,7 @@ class modelImage:
 			pipModel = Pipeline(piplist)
 			paramDict = pipModel.get_params()
 			joblib.dump(pipModel,os.path.join(self.modelLocation, filename))
-			paramLoc = os.path.join(self.modelLocation, name+"_PARAMS")
+			paramLoc = os.path.join(self.modelLocation, name)
 			if (os.path.exists(paramLoc) == False):
 				os.mkdir(paramLoc)
 			filename = os.path.join(paramLoc, "DEFAULT_PARAMS.joblib")
@@ -254,6 +254,27 @@ class modelImage:
 			imname = os.path.split(im)[-1]
 			if(filename == imname):
 				return im
+	
+	def getFilterAndParams(self):
+		filterList = self.DB.query("SELECT * FROM Filter")
+		filterParamDict = dict({})
+		for filters in filterList:
+			fitlerName = filters[0]
+			filterInfo = dict({})
+			filterInfo["focus"] = filters[1]
+			filterInfo["descript"] = filters[2]
+			params = os.listdir(os.path.join(self.modelLocation, fitlerName))
+			filterInfo["params"] = params
+			filterParamDict[fitlerName] = filterInfo
+		print(filterParamDict)
+		return filterParamDict
+
+	def getAndSetFilter(self, filtername, paramname):
+		choosenFilter = joblib.load(os.path.join(self.modelLocation, filtername) + ".joblib")
+		choosenParam  = joblib.load(os.path.join(self.modelLocation, filtername, paramname))
+		choosenFilter.set_params(**choosenParam)
+		return choosenFilter
+
 class threadSignals(QtCore.QObject):
 	finished = QtCore.pyqtSignal()
 	updateInfo = QtCore.pyqtSignal(str)
@@ -294,13 +315,40 @@ class ClusteringThread(QtCore.QRunnable):
 
 
 
+class FilteringThread(QtCore.QRunnable):
+	def __init__(self, pipeline, location):
+		super(FilteringThread, self).__init__()
+		self.pipline = pipeline
+		self.imageLocal = location
+		self.signals = threadSignals()
+	@QtCore.pyqtSlot()
+	def run(self):
+		transformPipline = self.pipline[:-1]
+		batchSize = 10
+		imgList = self.imageList()
+		transformArr = []
+		for i in range(0, len(imgList), batchSize):
+			print("Working on img {}-{}", i, i+batchSize)
+			imgBatch = imgList[i:i+batchSize]
+			batchTransform = transformPipline.transform(imgBatch)
+			transformArr += batchTransform
+		print("Starting esitmator step!")
+		self.pipline.fit_predict(transformArr)
+		print("Completed!")
+	
+	def imageList(self):
+		imgList = []
+		for imgs in glob.glob(self.imageLocal + "/**/*.tiff", recursive=True):
+			imgList.append(imgs)
+		return imgList 
+
 class TrainingThread(QtCore.QRunnable):
-	def __init__(self,X,y,pipeline):
+	def __init__(self,X,y,pipeline, location):
 		super(TrainingThread, self).__init__()
 		self.X = X
 		self.y = y
 		self.pipline = pipeline
-		self.signals = threadSignals()
+		self.imageLocal = location
 	@QtCore.pyqtSlot()
 	def run(self):
 		X_train, X_test, y_train, y_test = train_test_split(self.X, self.y, test_size=0.33)
@@ -310,8 +358,6 @@ class TrainingThread(QtCore.QRunnable):
 		pred = self.pipline.predict(X_test)
 		print(classification_report(y_test, pred))
 		self.signals.performanceOutput.emit(classification_report(y_test, pred))
-
-
 
 
 
