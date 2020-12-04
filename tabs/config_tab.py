@@ -166,6 +166,8 @@ class ConfigTab(QWidget):
         self.testFilterDescription = QTextEdit()
         self.testFilterViewOption = QComboBox()
         self.startFilteringButton = QPushButton("Start filtering!")
+        self.transformProgress = QProgressBar(self)
+        self.learningProgress = QProgressBar(self, textVisible=False)
         self.testFilterDescription.setReadOnly(True)
         self.testFilterDescription.setStyleSheet("color: black; background-color: rgba(0,0,0,0.15);")
         ##adding data to widgets
@@ -197,6 +199,12 @@ class ConfigTab(QWidget):
         row5 = RowWidget(self)  
         row5.layout.addWidget(QLabel("Description: "), 0, 0)
         row5.layout.addWidget(self.testFilterDescription, 0, 1)
+        row6 = RowWidget(self)  
+        row6.layout.addWidget(QLabel("Transform progress: "), 0, 0)
+        row6.layout.addWidget(self.transformProgress, 0, 1)
+        row7 = RowWidget(self)  
+        row7.layout.addWidget(QLabel("Learning progress: "), 0, 0)
+        row7.layout.addWidget(self.learningProgress, 0, 1)
         ##TESTING FILTER: add to layout
         self.testFilterLayout.addWidget(row1)
         self.testFilterLayout.addWidget(row3)
@@ -204,6 +212,8 @@ class ConfigTab(QWidget):
         self.testFilterLayout.addWidget(row4)
         self.testFilterLayout.addWidget(row5)
         self.testFilterLayout.addWidget(self.startFilteringButton)
+        self.testFilterLayout.addWidget(row6)
+        self.testFilterLayout.addWidget(row7)
 
 
         ###Filter: Setting layout and adding to main layout
@@ -268,12 +278,37 @@ class ConfigTab(QWidget):
         curFilter = self.filterListOption.itemText(self.filterListOption.currentIndex())
         curParam = self.filterParamListOptions.itemText(self.filterParamListOptions.currentIndex())
         selectedView = self.testFilterViewOption.itemText(self.testFilterViewOption.currentIndex())
-        filterFile = self.model.getAndSetFilter(curFilter, curParam)
         imageLocation = os.path.join(self.locationInputField.text(), selectedView)
-        filterThread = model.FilteringThread(filterFile, imageLocation)
-        self.threadpool.start(filterThread)
+        filterFile = self.model.getAndSetFilter(curFilter, curParam)
+        noTransform = self.model.filterInfoCheck(imgLocal=imageLocation, filtername=curFilter, paramname=curParam, view=selectedView)
+        if(noTransform != -1):
+            filterThread = model.FilteringThread(filterFile, imageLocation, noTransform=noTransform)
+            self.threadpool.start(filterThread)
+            filterThread.signals.transformSignal.connect(self.progressBarHandle)
+            filterThread.signals.learningSignal.connect(self.learningBarHandle)
+        else:
+            print("Working with same imagelocation, filter, parameter and view!")
+    
+    def progressBarHandle(self, message):
+        if(message[0] == "size"):
+            self.transformProgress.setMaximum(message[1])
+            self.transformProgress.setValue(0)
+        else:
+            maxx = self.transformProgress.maximum()
+            self.transformProgress.setValue(min(maxx, message[1]))
+
+    def learningBarHandle(self, message):
+        if(message[0] == "ended"):
+            self.learningProgress.setMinimum(1)
+            self.learningProgress.setValue(1)
+        else:
+            self.learningProgress.setMaximum(message[1])
 
     def clear_layout(self, layout):
     #Code reference [ https://www.semicolonworld.com/question/58072/clear-all-widgets-in-a-layout-in-pyqt ]
         for i in reversed(range(layout.count())): 
             layout.itemAt(i).widget().setParent(None)
+
+
+
+    

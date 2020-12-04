@@ -18,7 +18,7 @@ from sklearn.pipeline import Pipeline, make_pipeline
 import joblib 
 import inspect
 from sklearn.model_selection import train_test_split
-
+import copy
 
 class cluster:
     def __init__(self):
@@ -274,11 +274,53 @@ class modelImage:
 		choosenParam  = joblib.load(os.path.join(self.modelLocation, filtername, paramname))
 		choosenFilter.set_params(**choosenParam)
 		return choosenFilter
+	
+	def filterInfoCheck(self, imgLocal, filtername, paramname, view):
+		filename = ".cainfo"
+		filePath = os.path.join(imgLocal, filename) # C:/images/bottom/.cainfo
+		sameParam = False # at first we assume filter and view is different
+		if(os.path.exists(filePath) == True): # location has been filtered before
+			with open(filePath, "r") as signature:
+				ses_id = signature.readline().splitlines()[0]
+			oldFilt, oldView, oldParam = self.DB.query("SELECT filter_name, View, Params FROM Filter_Session WHERE sesID=?", (ses_id,))[0]
+			if(oldFilt == filtername and oldView == view):
+				if(oldParam != paramname):
+					oldParamFile = joblib.load(os.path.join(self.modelLocation, filtername, oldParam))
+					newParamFile = joblib.load(os.path.join(self.modelLocation, filtername, paramname))
+					sameParam = self.checkIfParamNotEq(oldParamFile, newParamFile)
+				else:
+					return -1 #Why are you using the same filter, view and params??? result will be same!
+		ses_id = self.DB.modifyTable("INSERT into Filter_Session(filter_name, View, Params, time, image_amount) VALUES (?,?,?,?,?)", (filtername, view, paramname, 0, 0))
+		with open(filePath, "w") as signature:
+			signature.write(str(ses_id))
+			signature.write(os.linesep)
+		return sameParam
+	
+	def checkIfParamNotEq(self, oldParamFile, newParamFile):
+		for components in oldParamFile["steps"][:-1]:
+			#componentName == name of the steps in pipeline
+			componentName = components[0]
+			for keys in oldParamFile.keys():
+				if(keys.find(componentName + "__") >= 0):
+					if(newParamFile[keys] != oldParamFile[keys]):
+						return False
+		return True
 
+
+
+		
+		
 class threadSignals(QtCore.QObject):
 	finished = QtCore.pyqtSignal()
 	updateInfo = QtCore.pyqtSignal(str)
 	performanceOutput = QtCore.pyqtSignal(str)
+
+
+class filterSignals(QtCore.QObject):
+	transformSignal = QtCore.pyqtSignal(tuple)
+	learningSignal = QtCore.pyqtSignal(tuple)
+
+
 class ClusteringThread(QtCore.QRunnable):
 	def __init__(self,path,structure,configFile):
 		super(ClusteringThread, self).__init__()
@@ -316,31 +358,94 @@ class ClusteringThread(QtCore.QRunnable):
 
 
 class FilteringThread(QtCore.QRunnable):
-	def __init__(self, pipeline, location):
+	def __init__(self, pipeline, location, noTransform):
 		super(FilteringThread, self).__init__()
 		self.pipline = pipeline
 		self.imageLocal = location
-		self.signals = threadSignals()
+		self.signals = filterSignals()
+		self.imgArrFileName = "imgArr.data"
+		self.noTransform = noTransform
 	@QtCore.pyqtSlot()
 	def run(self):
-		transformPipline = self.pipline[:-1]
-		batchSize = 10
 		imgList = self.imageList()
+		learnPipline = self.pipline[-1]
+		learnPipline.set_params(verbose=True)
 		transformArr = []
-		for i in range(0, len(imgList), batchSize):
-			print("Working on img {}-{}", i, i+batchSize)
-			imgBatch = imgList[i:i+batchSize]
-			batchTransform = transformPipline.transform(imgBatch)
-			transformArr += batchTransform
+		self.signals.transformSignal.emit(("size", len(imgList)))
+		if(self.noTransform == False):
+			self.cleanOldArrFile()
+			transformPipline = self.pipline[:-1]
+			transformPipline.set_params(verbose=True)
+			batchSize = 10
+			for i in range(0, len(imgList), batchSize):
+				imgBatch = imgList[i:i+batchSize]
+				batchTransform = transformPipline.transform(imgBatch)
+				transformArr += batchTransform.tolist()
+				#Saving the array in a file
+				self.saveImgInfo(imgList=imgBatch, imgArrList=batchTransform)
+				#Inform user about completion of batch transformation
+				self.signals.transformSignal.emit(("comp", i + batchSize))
+		else:
+			transformArr = self.getSavedImageData(imgList)
+			self.signals.transformSignal.emit(("comp", len(imgList)))
 		print("Starting esitmator step!")
-		self.pipline.fit_predict(transformArr)
+		self.signals.learningSignal.emit(("started", 0))
+		pred = learnPipline.fit_predict(transformArr)
+		self.signals.learningSignal.emit(("ended", 100))
+		self.moveImagesToDirect(imgList=imgList, predClass=pred)
 		print("Completed!")
-	
+
 	def imageList(self):
 		imgList = []
 		for imgs in glob.glob(self.imageLocal + "/**/*.tiff", recursive=True):
 			imgList.append(imgs)
 		return imgList 
+	
+	def cleanOldArrFile(self):
+		imgFile = os.path.join(self.imageLocal, self.imgArrFileName)
+		with open(imgFile, "w") as arrFile:
+			pass
+	
+	def saveImgInfo(self, imgList, imgArrList):
+		imgDict = dict({})
+		for i in range(len(imgList)):
+			arr = imgArrList[i]
+			imgName = os.path.split(imgList[i])[-1]
+			if(type(arr) == np.ndarray):
+				arr = arr.tolist()
+			imgDict[imgName] = arr
+		imgFile = os.path.join(self.imageLocal, self.imgArrFileName)
+		with open(imgFile, "a") as f:
+			json.dump(imgDict, f)
+			f.write(os.linesep)
+	
+	def moveImagesToDirect(self, imgList, predClass):
+		for index, imgPath in enumerate(imgList):
+			directPath = os.path.join(self.imageLocal, str(predClass[index]))
+			if(os.path.exists(directPath) == False):
+				os.mkdir(directPath)
+			try:
+				shutil.move(imgPath, directPath)
+			except:
+				pass #most probably due to file existing in same directory!
+		imgDirects = [os.path.join(self.imageLocal, direcs) for direcs in os.listdir(self.imageLocal)]
+		for direcs in imgDirects:
+			try:
+				os.rmdir(direcs)
+			except:
+				print("Not empty")
+	
+	def getSavedImageData(self, imgList):
+		fileLocation = os.path.join(self.imageLocal, self.imgArrFileName)
+		imgArr = []
+		with open(fileLocation, "r") as imgInfo:
+			imgDict = dict({})
+			for imgJson in [line for line in imgInfo.read().splitlines() if len(line) > 0 ]:
+				imgDict.update(json.loads(imgJson))
+		for imgPath in imgList:
+			imgName = os.path.split(imgPath)[-1]
+			imgArr.append(imgDict[imgName])
+		return imgArr
 
 class TrainingThread(QtCore.QRunnable):
 	def __init__(self,X,y,pipeline, location):
@@ -362,6 +467,8 @@ class TrainingThread(QtCore.QRunnable):
 
 
 if __name__ == "__main__":
-	modelClass = modelImage()
-	print("Yo")
-	#modelClass.structureFile()
+	db = databaseManager()
+	modelClass = modelImage(DB=db)
+	returnv = modelClass.filterInfoCheck(imgLocal=r"D:\Documents\Capstone_Work\Testing_Sample_keras\Dummy", filtername="adarsh", paramname="DEFAULT_PARAMS.joblib", view="Bottom")
+	print(returnv)
+	#modelClass.filterInfoCheck("./", "adarsh", "adasa", "Bottom")
