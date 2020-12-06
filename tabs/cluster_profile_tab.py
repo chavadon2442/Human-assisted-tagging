@@ -26,6 +26,7 @@ class ClusterProfileTab(QWidget):
 		self.mainLayout.addLayout(self.imageLayout)
 		self.mainLayout.addLayout(self.infoLayout)
 		#Info layout
+		self.errPopupWidget = QMessageBox()
 		self.clusterInfoFrame = QFrame()
 		self.photoInfoFrame = QFrame()
 		self.updateDataButton = QPushButton("Update data")
@@ -127,12 +128,47 @@ class ClusterProfileTab(QWidget):
 		self.tagPhotoButton.setEnabled(False)
 		currentView, currentCluster = self.getCurrentClusterAndView()
 		curCluster = self.mainData[currentView][currentCluster]
-		tag = [item.text() for item in self.photoDropDown.selectedItems()]
-		if(self.model.tagImage(currentView, curCluster.images[self.imgIndex], tag) == True):
-			curCluster.removeImages(self.imgIndex)
-			self.getPhoto()
-		else:
-			print("Moving images failed!")
+		tag = [item.text() for item in self.photoDropDown.selectedItems()][0]
+		if(self.filterInfo != None):
+			if(currentCluster not in self.filterClassDict):
+				self.filterClassDict[currentCluster] = dict({})
+			if(tag not in self.filterClassDict[currentCluster]):
+				self.filterClassDict[currentCluster][tag] = 1
+			else:
+				self.filterClassDict[currentCluster][tag] += 1
+		curCluster.removeImages(self.imgIndex)
+		if(curCluster.getClusterLen() == 0):
+			#Add the tag information to DB
+			filterName, view, params = self.filterInfo
+			totalTagged = sum(self.filterClassDict[currentCluster].values())
+			for tags in self.filterClassDict[currentCluster]:
+				#Please change this method !! --> tagID = self.model.DB.query("SELECT Tag_No from DETAILS WHERE Description=?", (tags,))[0]
+				tagTotal = self.filterClassDict[currentCluster][tags]
+				recallRate = tagTotal / totalTagged
+				result = self.model.DB.query("""
+				SELECT performance, ses_amt, detectedImage from Filter_tag 
+				WHERE filter_name=? AND
+					  Params=? AND
+					  View=? AND
+					  tag_alias=? AND
+					  tag_name=?""", (filterName, params, view, str(currentCluster), tags))
+				if(result != []):
+					performance, ses_amt, detectedImage = result[0]
+					newAvgPerformance = (performance*ses_amt + recallRate) / (ses_amt + 1)
+					newDetectedImage = tagTotal + detectedImage
+					new_ses = ses_amt + 1
+					print(newAvgPerformance, newDetectedImage, new_ses)
+					self.model.DB.modifyTable("""UPDATE Filter_tag 
+					   SET performance=?,ses_amt=?,detectedImage=?
+					   WHERE filter_name=? AND Params=? AND View=? AND tag_alias=? AND tag_name=?""", (newAvgPerformance, new_ses, newDetectedImage, filterName, params, view, str(currentCluster), tags))
+				else:
+					self.model.DB.modifyTable("""INSERT INTO FIlter_tag VALUES (?,?,?,?,?,?,?,?)""", (filterName, params, view, str(currentCluster), tags, recallRate, 1, tagTotal))
+		self.getPhoto()
+		# if(self.model.tagImage(currentView, curCluster.images[self.imgIndex], tag) == True):
+		# 	curCluster.removeImages(self.imgIndex)
+		# 	self.getPhoto()
+		# else:
+		# 	print("Moving images failed!")
 
 	def getCurrentClusterAndView(self):
 		return self.viewList.itemText(self.viewList.currentIndex()), self.clusterList.itemText(self.clusterList.currentIndex())
@@ -141,6 +177,17 @@ class ClusterProfileTab(QWidget):
 		fileLocal = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
 		if(fileLocal != None and fileLocal != ""):
 			self.clusterLocationWidget.setText(fileLocal)
+			filePath = os.path.join(fileLocal, ".cainfo")
+			self.filterInfo = None
+			self.filterClassDict = dict({})
+			if(os.path.exists(filePath) == False):
+				self.errPopupWidget.setWindowTitle("Warning!")
+				self.errPopupWidget.setText("No .cainfo file in directory!:\nIf you filtered this location using this applcaition, make sure you are in the correct directory!")
+				self.errPopupWidget.setIcon(QMessageBox.Warning)
+				self.errPopupWidget.setStandardButtons(QMessageBox.Ok)
+				self.errPopupWidget.exec_()
+			else:
+				self.filterInfo = self.model.getSesInformation(filePath)
 			self.__datasetup__()
 
 	def clear_layout(self, layout):

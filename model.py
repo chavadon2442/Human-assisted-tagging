@@ -21,28 +21,36 @@ from sklearn.model_selection import train_test_split
 import copy
 
 class cluster:
-    def __init__(self):
-        self.paths = []
-        self.images = []
-        self.imgAmtRequired = 30
-    def addPath(self, path):
-        self.paths.append(path)
-    def addImages(self):
-        amtFromEach = self.imgAmtRequired//len(self.paths)
-        for path in self.paths:
-            imgs = os.listdir(path)
-            try:
-                self.images = self.images +  random.sample(imgs, amtFromEach)
-            except:
-                self.images = self.images + imgs
-            for i,localImgPath in enumerate(self.images):
-            	self.images[i] = os.path.join(path, localImgPath)
-        self.imgAmt = len(self.images)
-    def removeImages(self, index):
-        self.images.pop(index)
-        self.imgAmt -= 1
-        if(len(self.images) < 1):
-            self.addImages()
+	def __init__(self):
+		self.paths = []
+		self.images = []
+		self.imgAmtRequired = 30
+	def addPath(self, path):
+		self.paths.append(path)
+	def addImages(self):
+		amtFromEach = self.imgAmtRequired//len(self.paths)
+		for path in self.paths:
+			imgs = os.listdir(path)
+			try:
+				self.images = self.images +  random.sample(imgs, amtFromEach)
+			except:
+				self.images = self.images + imgs
+			for i,localImgPath in enumerate(self.images):
+				self.images[i] = os.path.join(path, localImgPath)
+		self.imgAmt = len(self.images)
+
+	def removeImages(self, index):
+		self.images.pop(index)
+		self.imgAmt -= 1
+		print(self.images)
+		if(len(self.images) < 1):
+			self.addImages()
+
+	def getClusterLen(self):
+		clusterLen = 0
+		for paths in self.paths:
+			clusterLen += len(os.listdir(paths))
+		return clusterLen
 
 
 class modelImage:
@@ -296,6 +304,11 @@ class modelImage:
 			signature.write(os.linesep)
 		return sameParam
 	
+	def getSesInformation(self, filepath):
+		with open(filepath, "r") as signature:
+			ses_id = signature.readline().splitlines()[0]
+		return self.DB.query("SELECT filter_name, View, Params FROM Filter_Session WHERE sesID=?", (ses_id,))[0]
+
 	def checkIfParamNotEq(self, oldParamFile, newParamFile):
 		for components in oldParamFile["steps"][:-1]:
 			#componentName == name of the steps in pipeline
@@ -305,9 +318,6 @@ class modelImage:
 					if(newParamFile[keys] != oldParamFile[keys]):
 						return False
 		return True
-
-
-
 		
 		
 class threadSignals(QtCore.QObject):

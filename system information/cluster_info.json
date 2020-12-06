@@ -5,5 +5,6 @@
     "E:\\automation_of_something"
   ],
   "datasetLocation": "D:\\Documents\\Capstone_Work\\Testing_Sample_keras\\NewDatasetLocation",
-  "datasetLocation_old": "D:\\Documents\\Capstone_Work\\Testing_Sample_keras\\TagLocation"
+  "datasetLocation_old": "D:\\Documents\\Capstone_Work\\Testing_Sample_keras\\TagLocation",
+  "final_datasetLocation": "D:\\Documents\\Capstone_Work\\Testing_Sample_keras\\FinalDatasetLoaction"
 }
