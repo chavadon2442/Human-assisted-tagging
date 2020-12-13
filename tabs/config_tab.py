@@ -282,7 +282,7 @@ class ConfigTab(QWidget):
         filterFile = self.model.getAndSetFilter(curFilter, curParam)
         noTransform = self.model.filterInfoCheck(imgLocal=imageLocation, filtername=curFilter, paramname=curParam, view=selectedView)
         if(noTransform != -1):
-            self.startFilteringButton.isEnabled(False)
+            self.startFilteringButton.setEnabled(False)
             filterThread = model.FilteringThread(filterFile, imageLocation, noTransform=noTransform)
             self.threadpool.start(filterThread)
             filterThread.signals.transformSignal.connect(self.progressBarHandle)
@@ -302,7 +302,7 @@ class ConfigTab(QWidget):
         if(message[0] == "ended"):
             self.learningProgress.setMaximum(1)
             self.learningProgress.setValue(1)
-            self.startFilteringButton.isEnabled(True)
+            self.startFilteringButton.setEnabled(True)
         else:
             self.learningProgress.setMaximum(message[1])
 

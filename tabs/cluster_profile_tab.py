@@ -50,6 +50,8 @@ class ClusterProfileTab(QWidget):
 		self.viewList = QComboBox()
 		self.clusterList = QComboBox()
 		self.imageLabel = QLabel("Image Label: ")
+		self.filterLabelInfo = QLabel("")
+		self.paramLabelInfo = QLabel("")
 		self.clusterLocationWidget = QLineEdit("")
 		self.clusterLocationWidget.setStyleSheet("color: black; background-color: rgba(0,0,0,0.15);")
 		self.browseClusterButton = QPushButton("Browse")
@@ -63,7 +65,11 @@ class ClusterProfileTab(QWidget):
 		self.clusterInfoLayout.addWidget(self.viewList, 1,1)
 		self.clusterInfoLayout.addWidget(QLabel("Cluster"), 2,0)
 		self.clusterInfoLayout.addWidget(self.clusterList, 2,1)
-		self.clusterInfoLayout.addWidget(self.imageLabel, 3,0,2,2)
+		self.clusterInfoLayout.addWidget(self.imageLabel, 3,0,1,2)
+		self.clusterInfoLayout.addWidget(QLabel("Filter:"), 4,0)
+		self.clusterInfoLayout.addWidget(self.filterLabelInfo, 4,1)
+		self.clusterInfoLayout.addWidget(QLabel("Param used:"), 5,0)
+		self.clusterInfoLayout.addWidget(self.paramLabelInfo, 5,1)
 		self.clusterInfoFrame.setLayout(self.clusterInfoLayout)
 
 		#Photo info
@@ -76,7 +82,7 @@ class ClusterProfileTab(QWidget):
 		self.getNextPhotoButton = QPushButton("Next photo") 
 		self.photoInfoLayout.addWidget(self.getNextPhotoButton, 0,0,1,2)
 		self.photoDropDown = QListWidget()
-		self.photoDropDown.setSelectionMode(QListWidget.MultiSelection)
+		#self.photoDropDown.setSelectionMode(QListWidget.MultiSelection)
 		self.photoInfoLayout.addWidget(self.photoDropDown, 1,0,1,2)
 		self.photoInfoLayout.addWidget(self.tagButton, 2,0,1,2)
 		self.photoInfoLayout.addWidget(self.tagPhotoButton, 3,0,1,2)
@@ -136,8 +142,9 @@ class ClusterProfileTab(QWidget):
 				self.filterClassDict[currentCluster][tag] = 1
 			else:
 				self.filterClassDict[currentCluster][tag] += 1
+		self.model.tag_image_trivial(curCluster.images[self.imgIndex], tag)
 		curCluster.removeImages(self.imgIndex)
-		if(curCluster.getClusterLen() == 0):
+		if(curCluster.getClusterLen() == 0 and self.filterInfo != None):
 			#Add the tag information to DB
 			filterName, view, params = self.filterInfo
 			totalTagged = sum(self.filterClassDict[currentCluster].values())
@@ -163,7 +170,10 @@ class ClusterProfileTab(QWidget):
 					   WHERE filter_name=? AND Params=? AND View=? AND tag_alias=? AND tag_name=?""", (newAvgPerformance, new_ses, newDetectedImage, filterName, params, view, str(currentCluster), tags))
 				else:
 					self.model.DB.modifyTable("""INSERT INTO FIlter_tag VALUES (?,?,?,?,?,?,?,?)""", (filterName, params, view, str(currentCluster), tags, recallRate, 1, tagTotal))
-		self.getPhoto()
+			del self.mainData[currentView][currentCluster]
+			self.setupClusterList()
+		else:
+			self.getPhoto()
 		# if(self.model.tagImage(currentView, curCluster.images[self.imgIndex], tag) == True):
 		# 	curCluster.removeImages(self.imgIndex)
 		# 	self.getPhoto()
@@ -182,12 +192,14 @@ class ClusterProfileTab(QWidget):
 			self.filterClassDict = dict({})
 			if(os.path.exists(filePath) == False):
 				self.errPopupWidget.setWindowTitle("Warning!")
-				self.errPopupWidget.setText("No .cainfo file in directory!:\nIf you filtered this location using this applcaition, make sure you are in the correct directory!")
+				self.errPopupWidget.setText("No .cainfo file in directory!:\nThis location was not filtered; The performance of each class will not be tracked!")
 				self.errPopupWidget.setIcon(QMessageBox.Warning)
 				self.errPopupWidget.setStandardButtons(QMessageBox.Ok)
 				self.errPopupWidget.exec_()
 			else:
 				self.filterInfo = self.model.getSesInformation(filePath)
+				self.filterLabelInfo.setText(self.filterInfo[0])
+				self.paramLabelInfo.setText(self.filterInfo[2])
 			self.__datasetup__()
 
 	def clear_layout(self, layout):

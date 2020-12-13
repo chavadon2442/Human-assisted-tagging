@@ -42,8 +42,7 @@ class cluster:
 	def removeImages(self, index):
 		self.images.pop(index)
 		self.imgAmt -= 1
-		print(self.images)
-		if(len(self.images) < 1):
+		if(len(self.images) < 1 and self.getClusterLen() > 0):
 			self.addImages()
 
 	def getClusterLen(self):
@@ -318,7 +317,20 @@ class modelImage:
 					if(newParamFile[keys] != oldParamFile[keys]):
 						return False
 		return True
-		
+	
+	def tag_image_trivial(self, imgPath, tag):
+		with open("./system information/cluster_info.json", "r") as configData:
+			information = json.load(configData)
+			storageLocation = information["final_datasetLocation"]
+		imgName = os.path.split(imgPath)[-1]
+		view = imgName.split("_")[0]
+		viewLoc = os.path.join(storageLocation, view)
+		if(os.path.exists(viewLoc) == False):
+			os.mkdir(viewLoc)
+		tagLoc = os.path.join(viewLoc, tag)
+		if(os.path.exists(tagLoc) == False):
+			os.mkdir(tagLoc)
+		shutil.move(imgPath, tagLoc)
 		
 class threadSignals(QtCore.QObject):
 	finished = QtCore.pyqtSignal()
@@ -381,8 +393,9 @@ class FilteringThread(QtCore.QRunnable):
 		learnPipline = self.pipline[-1]
 		learnPipline.set_params(verbose=True)
 		transformArr = []
+		imgArrFileLoc = os.path.join(self.imageLocal, self.imgArrFileName)
 		self.signals.transformSignal.emit(("size", len(imgList)))
-		if(self.noTransform == False):
+		if(self.noTransform == False or os.path.exists(imgArrFileLoc) == False):
 			self.cleanOldArrFile()
 			transformPipline = self.pipline[:-1]
 			transformPipline.set_params(verbose=True)
