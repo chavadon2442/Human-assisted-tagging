@@ -31,11 +31,16 @@ This module depends upon a knowledge of [PyQt5](https://pypi.org/project/PyQt5/)
 ```
 python ./app.py
 ```
-Currently the only module required is PyQt, but future versions will include the following libraries:
-> * Matplotlib
-> * Numpy
-> * OpenCV (cv2)
-> * Keras
+This project relies on quite a lot of dependencies. If you are running this applicaiton using anaconda, you can use *setup_dependency.py* file to download all the required dependencies. 
+
+```
+python ./setup_dependency.py
+```
+Once executed, you can:
+> * Create new environment with all the dependency.
+> * Choose the environment you want to download these dependencies in.
+
+All the dependencies are listed in *./env/environment.yml*
 
 ## Contributing
 
