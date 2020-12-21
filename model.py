@@ -19,6 +19,7 @@ import joblib
 import inspect
 from sklearn.model_selection import train_test_split
 import copy
+import traceback
 
 class cluster:
 	def __init__(self):
@@ -273,7 +274,6 @@ class modelImage:
 			params = os.listdir(os.path.join(self.modelLocation, fitlerName))
 			filterInfo["params"] = params
 			filterParamDict[fitlerName] = filterInfo
-		print(filterParamDict)
 		return filterParamDict
 
 	def getAndSetFilter(self, filtername, paramname):
@@ -296,12 +296,12 @@ class modelImage:
 					newParamFile = joblib.load(os.path.join(self.modelLocation, filtername, paramname))
 					sameParam = self.checkIfParamNotEq(oldParamFile, newParamFile)
 				else:
-					return -1 #Why are you using the same filter, view and params??? result will be same!
+					return (-1, ses_id) #Why are you using the same filter, view and params??? result will be same!
 		ses_id = self.DB.modifyTable("INSERT into Filter_Session(filter_name, View, Params, time, image_amount) VALUES (?,?,?,?,?)", (filtername, view, paramname, 0, 0))
 		with open(filePath, "w") as signature:
 			signature.write(str(ses_id))
 			signature.write(os.linesep)
-		return sameParam
+		return (sameParam, ses_id)
 	
 	def getSesInformation(self, filepath):
 		with open(filepath, "r") as signature:
@@ -341,6 +341,11 @@ class threadSignals(QtCore.QObject):
 class filterSignals(QtCore.QObject):
 	transformSignal = QtCore.pyqtSignal(tuple)
 	learningSignal = QtCore.pyqtSignal(tuple)
+	errSignal = QtCore.pyqtSignal(tuple)
+	"""
+	errSignal ==> 0-transform err
+				  1-prediction err
+	"""
 
 
 class ClusteringThread(QtCore.QRunnable):
@@ -380,43 +385,57 @@ class ClusteringThread(QtCore.QRunnable):
 
 
 class FilteringThread(QtCore.QRunnable):
-	def __init__(self, pipeline, location, noTransform):
+	def __init__(self, pipeline, location, noTransform, identity):
 		super(FilteringThread, self).__init__()
 		self.pipline = pipeline
 		self.imageLocal = location
 		self.signals = filterSignals()
 		self.imgArrFileName = "imgArr.data"
 		self.noTransform = noTransform
+		self.identity = identity
+		self.threadactive = True
 	@QtCore.pyqtSlot()
 	def run(self):
-		imgList = self.imageList()
-		learnPipline = self.pipline[-1]
-		learnPipline.set_params(verbose=True)
-		transformArr = []
-		imgArrFileLoc = os.path.join(self.imageLocal, self.imgArrFileName)
-		self.signals.transformSignal.emit(("size", len(imgList)))
-		if(self.noTransform == False or os.path.exists(imgArrFileLoc) == False):
-			self.cleanOldArrFile()
-			transformPipline = self.pipline[:-1]
-			transformPipline.set_params(verbose=True)
-			batchSize = 10
-			for i in range(0, len(imgList), batchSize):
-				imgBatch = imgList[i:i+batchSize]
-				batchTransform = transformPipline.transform(imgBatch)
-				transformArr += batchTransform.tolist()
-				#Saving the array in a file
-				self.saveImgInfo(imgList=imgBatch, imgArrList=batchTransform)
-				#Inform user about completion of batch transformation
-				self.signals.transformSignal.emit(("comp", i + batchSize))
-		else:
-			transformArr = self.getSavedImageData(imgList)
-			self.signals.transformSignal.emit(("comp", len(imgList)))
-		print("Starting esitmator step!")
-		self.signals.learningSignal.emit(("started", 0))
-		pred = learnPipline.fit_predict(transformArr)
-		self.signals.learningSignal.emit(("ended", 100))
-		self.moveImagesToDirect(imgList=imgList, predClass=pred)
-		print("Completed!")
+		try:
+			imgList = self.imageList()
+			learnPipline = self.pipline[-1]
+			learnPipline.set_params(verbose=True)
+			transformArr = []
+			imgArrFileLoc = os.path.join(self.imageLocal, self.imgArrFileName)
+			self.signals.transformSignal.emit(("size", len(imgList), self.identity))
+			if(self.noTransform == False or os.path.exists(imgArrFileLoc) == False):
+				self.cleanOldArrFile()
+				transformPipline = self.pipline[:-1]
+				transformPipline.set_params(verbose=True)
+				batchSize = 10
+				for i in range(0, len(imgList), batchSize):
+					imgBatch = imgList[i:i+batchSize]
+					batchTransform = transformPipline.transform(imgBatch)
+					transformArr += batchTransform.tolist()
+					#Saving the array in a file
+					self.saveImgInfo(imgList=imgBatch, imgArrList=batchTransform)
+					#Inform user about completion of batch transformation
+					self.signals.transformSignal.emit(("comp", i + batchSize, self.identity))
+			else:
+				transformArr = self.getSavedImageData(imgList)
+				self.signals.transformSignal.emit(("comp", len(imgList), self.identity))
+		except:
+			errMsg = traceback.format_exc()
+			self.signals.errSignal.emit((0, self.identity, errMsg)) 
+			self.deleteFiles()
+			return None
+		try:
+			print("Starting esitmator step!")
+			self.signals.learningSignal.emit(("started", 0, self.identity))
+			pred = learnPipline.fit_predict(transformArr)
+			self.signals.learningSignal.emit(("ended", 100, self.identity))
+			self.moveImagesToDirect(imgList=imgList, predClass=pred)
+			print("Completed!")
+		except:
+			errMsg = traceback.format_exc()
+			self.signals.errSignal.emit((1, self.identity, errMsg))
+			self.deleteFiles()
+			return None 
 
 	def imageList(self):
 		imgList = []
@@ -428,7 +447,15 @@ class FilteringThread(QtCore.QRunnable):
 		imgFile = os.path.join(self.imageLocal, self.imgArrFileName)
 		with open(imgFile, "w") as arrFile:
 			pass
-	
+
+	def deleteFiles(self):
+		caFile = os.path.join(self.imageLocal, ".cainfo")
+		imgFile = os.path.join(self.imageLocal, self.imgArrFileName)
+		if(os.path.exists(imgFile)):
+			os.remove(imgFile)
+		if(os.path.exists(caFile)):
+			os.remove(caFile)
+
 	def saveImgInfo(self, imgList, imgArrList):
 		imgDict = dict({})
 		for i in range(len(imgList)):
@@ -470,6 +497,10 @@ class FilteringThread(QtCore.QRunnable):
 			imgArr.append(imgDict[imgName])
 		return imgArr
 
+	def stop(self):
+		self.deleteFiles()
+		self.threadactive = False
+	
 class TrainingThread(QtCore.QRunnable):
 	def __init__(self,X,y,pipeline, location):
 		super(TrainingThread, self).__init__()

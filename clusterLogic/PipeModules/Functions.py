@@ -22,7 +22,6 @@ class Resnet101Transformer(BaseEstimator, TransformerMixin):
         model = ResNet101()
         imgArr = []
         for index, imgs in enumerate(X):
-            print(index)
             imgs = cv2.resize(imgs, (224,224))
             img_data = np.expand_dims(imgs, axis=0)
             img_data = preprocess_input(img_data)

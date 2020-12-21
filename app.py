@@ -22,19 +22,19 @@ class MainWindow(QWidget):
 		DB = databaseManager()
 		self.mainLayout = QVBoxLayout()
 		self.windowTab = QTabWidget(self)
-		self.clusterListTab = ClusterListTab(self, threadpool=self.threadPool, db=DB)
+		#self.clusterListTab = ClusterListTab(self, threadpool=self.threadPool, db=DB)
 		self.clusterProfileTab = ClusterProfileTab(self, threadpool=self.threadPool, db=DB)
 		self.configTab = ConfigTab(self, threadpool=self.threadPool, db=DB)
 		#self.trainingTab = TrainTab(self, threadpool=self.threadPool)
-		self.windowTab.addTab(self.clusterListTab, "Cluster location")
+		#self.windowTab.addTab(self.clusterListTab, "Cluster location")
 		self.windowTab.addTab(self.clusterProfileTab, "Cluster profile")
 		self.windowTab.addTab(self.configTab, "Configuration")
 		#self.windowTab.addTab(self.trainingTab, "Training")
 		self.mainLayout.addWidget(self.windowTab)
 		self.setLayout(self.mainLayout)
-	def switch_cluster_and_tab(self, name):
-		self.clusterProfileTab.newClusterRequest(name)
-		self.windowTab.setCurrentIndex(1)
+	def switch_and_set_location(self, location):
+		self.clusterProfileTab.setDirectoryLocation(location)
+		self.windowTab.setCurrentIndex(0)
 
 
 

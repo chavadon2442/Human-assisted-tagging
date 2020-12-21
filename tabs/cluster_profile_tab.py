@@ -186,6 +186,10 @@ class ClusterProfileTab(QWidget):
 	def getDirectoryLocation(self):
 		fileLocal = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
 		if(fileLocal != None and fileLocal != ""):
+			self.setDirectoryLocation(fileLocal)
+	
+	def setDirectoryLocation(self, fileLocal):
+		if(fileLocal != None and fileLocal != ""):
 			self.clusterLocationWidget.setText(fileLocal)
 			filePath = os.path.join(fileLocal, ".cainfo")
 			self.filterInfo = None
@@ -201,7 +205,7 @@ class ClusterProfileTab(QWidget):
 				self.filterLabelInfo.setText(self.filterInfo[0])
 				self.paramLabelInfo.setText(self.filterInfo[2])
 			self.__datasetup__()
-
+	
 	def clear_layout(self, layout):
 	#Code reference [ https://www.semicolonworld.com/question/58072/clear-all-widgets-in-a-layout-in-pyqt ]
 		for i in reversed(range(layout.count())): 

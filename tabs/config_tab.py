@@ -1,10 +1,25 @@
 from PyQt5.QtWidgets import *
 from widgets.cluster_display import ClusterDisplay
 from PyQt5 import Qt,QtCore, QtGui
+from PyQt5.QtGui import QIcon, QPixmap, QFont
 import model
 from functools import partial
+import matplotlib
+matplotlib.use('Qt5Agg')
+
 import json
 import os
+import random
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
+from matplotlib.figure import Figure
+
+class MplCanvas(FigureCanvasQTAgg):
+    def __init__(self, parent=None, width=5, height=4, dpi=100):
+        fig = Figure(figsize=(width, height), dpi=dpi)
+        self.axes = fig.add_subplot(111)
+        super(MplCanvas, self).__init__(fig)
+
+
 class PipeLineWidget(QWidget):
     def __init__(self, itemList):
         super(PipeLineWidget, self).__init__()
@@ -35,12 +50,13 @@ class PipeLineWidget(QWidget):
             self.paramsTable.setItem(0,i,label)
             self.paramsTable.setItem(1,i,value)
 
-class filterPipeItem(QWidget):
+class filterPipeItem(QFrame):
     def __init__(self, dataDict):
         super(filterPipeItem, self).__init__()
         self.data = dataDict
         self.layout = QGridLayout()
         self.setLayout(self.layout)
+        self.setStyleSheet("QFrame {background-color: #093154; color: white; font-size: 13}") 
         #Items
         self.typeList = QComboBox()
         self.estmList = QComboBox()
@@ -51,10 +67,8 @@ class filterPipeItem(QWidget):
         #add items to layout
         self.layout.addWidget(QLabel("Type: "), 5, 0)
         self.layout.addWidget(self.typeList, 5, 1)
-        self.layout.addWidget(QLabel("Function: "), 5, 2)
-        self.layout.addWidget(self.estmList, 5, 3)
-        self.layout.addWidget(QLabel("Params: "), 5, 4)
-        self.layout.addWidget(QPushButton("select"), 5, 5)
+        self.layout.addWidget(QLabel("Function: "), 6, 0)
+        self.layout.addWidget(self.estmList, 6, 1)
     def setData(self):
         self.Piptype = self.typeList.itemText(self.typeList.currentIndex())
         try:
@@ -74,10 +88,82 @@ class filterPipeItem(QWidget):
     def getVals(self):
         return (self.estimator[0], self.estimator[1]())
 
+class FliteringInfo(QFrame):
+    def __init__(self, name, thread, filterr, param, view, directoryLocal):
+        super(FliteringInfo, self).__init__()
+        self.direcLocal = directoryLocal
+        self.setMaximumHeight(250)
+        self.setMaximumWidth(550)
+        self.threadItem = thread
+        self.IDstring = "ID: {}".format(name)
+        self.stringInfo = "{} (Parameter: {})\tVIEW: {}".format(filterr, param, view)
+        self.layout = QGridLayout()
+        self.setLayout(self.layout)
+        self.status = True
+        self.setStyleSheet("QFrame {background-color: #a2b9bc; color: black;}") 
+        self.configLabel = QLabel("")
+        self.nameLabel = QLabel("")
+        self.nameLabel.setText(self.IDstring) 
+        self.nameLabel.setStyleSheet("font-size: 13; font-weight:bold;")
+        self.infoLabel = QLabel("")
+        self.infoLabel.setText(self.stringInfo)
+        self.infoLabel.setStyleSheet("font-size: 13; font-weight:bold;")
+        self.errorLog = QTextEdit("")
+        self.errorLog.setMaximumHeight(75)
+        self.errorLog.setReadOnly(True)
+        self.closeButton = QPushButton("x")
+        self.closeButton.setMaximumWidth(20)
+        self.closeButton.setMaximumHeight(20)
+        self.closeButton.setStyleSheet("color: #2B3252; background-color: #EF5455; font-size:13; font-weight: bold;")
+        self.transformProgress = QProgressBar(self)
+        self.learningProgress = QProgressBar(self, textVisible=False)
+        self.tagDirectoryButton = QPushButton("Tag directory")
+        self.openDirectoryButton = QPushButton("Open directory")
+        self.closeButton.clicked.connect(self.terminate)
+        self.openDirectoryButton.clicked.connect(self.openBrowser)
+        self.tagDirectoryButton.setMaximumWidth(100)
+        self.tagDirectoryButton.setVisible(False)
+        #add items to layout
+        self.layout.addWidget(self.nameLabel, 0, 0)
+        self.layout.addWidget(self.infoLabel, 0, 1)
+        self.layout.addWidget(self.closeButton, 0, 2)
+        self.layout.addWidget(QLabel("Transform progress"), 1, 0)
+        self.layout.addWidget(self.transformProgress, 1, 1)
+        self.layout.addWidget(QLabel("Learning progress"), 2, 0)
+        self.layout.addWidget(self.learningProgress, 2, 1)
+        self.layout.addWidget(QLabel("Error log:"), 3, 0)
+        self.layout.addWidget(self.errorLog, 4, 0,4,3)
+        self.layout.addWidget(self.openDirectoryButton, 8,0)
+        self.layout.addWidget(self.tagDirectoryButton,8,1)
+        self.layout.addWidget(self.configLabel, 9, 0,1,3)
+
+    def openBrowser(self):
+        os.startfile(self.direcLocal)
+
+    def makeVisible(self):
+        self.tagDirectoryButton.setVisible(True)
+
+    def terminate(self):
+        if(self.status==True):
+            self.configLabel.setText("Cannot quit a running filter!")
+            #self.threadItem.stop()
+        else:
+            self.setParent(None)
+
+
+
 class RowWidget(QWidget):
     def __init__(self, parent):
         super(RowWidget, self).__init__(parent)
         self.layout = QGridLayout()
+        self.setLayout(self.layout)
+
+class ParamPopup(QDialog):
+    def __init__(self, parent):
+        super(ParamPopup, self).__init__(parent)
+        self.layout = QVBoxLayout()
+        self.labelRef = QLabel("Adarsh")
+        self.layout.addWidget(self.labelRef)
         self.setLayout(self.layout)
 
 class ConfigTab(QWidget):
@@ -143,14 +229,15 @@ class ConfigTab(QWidget):
         self.filterLayout.addWidget(self.filterAddPipeButton, 7,0,1,1)
         self.filterLayout.addWidget(self.filterRemovePipeButton, 7,1,1,1)
         self.filterLayout.addWidget(self.filterCreatePipeButton, 7,4,1,1)
+        self.filterPipeLayout.addStretch(1)
         #####Filter: Adding items to pipes
         self.filterPipeList = []
 
 
         ##TESTING FILTER:
         self.testFilterBox = QGroupBox("Test Filter")
-        self.testFilterBox.setMaximumWidth(500)
-        self.testFilterBox.setMaximumHeight(500)
+        self.testFilterBox.setMaximumWidth(1000)
+        self.testFilterBox.setMaximumHeight(1500)
         self.testFilterLayout = QVBoxLayout()
         ##TESTING FILTER: ITEMS
         self.selectLocationButton = QPushButton("Browse location")
@@ -166,8 +253,6 @@ class ConfigTab(QWidget):
         self.testFilterDescription = QTextEdit()
         self.testFilterViewOption = QComboBox()
         self.startFilteringButton = QPushButton("Start filtering!")
-        self.transformProgress = QProgressBar(self)
-        self.learningProgress = QProgressBar(self, textVisible=False)
         self.testFilterDescription.setReadOnly(True)
         self.testFilterDescription.setStyleSheet("color: black; background-color: rgba(0,0,0,0.15);")
         ##adding data to widgets
@@ -178,6 +263,20 @@ class ConfigTab(QWidget):
         self.selectLocationButton.clicked.connect(self.getDirectoryLocation)
         self.filterParamDict = self.model.getFilterAndParams()
         self.filterListOption.addItems(self.filterParamDict.keys())
+
+        ###CHART STUFF 
+        self.chartScrollArea = QScrollArea()
+        self.chartScrollWidget = QWidget()
+        self.chartScrollLayout = QVBoxLayout()
+        self.chartScrollArea.setWidgetResizable(True)
+        self.chartScrollArea.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+        self.chartScrollArea.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.chartScrollArea.setMaximumHeight(300)
+        self.chartScrollWidget.setLayout(self.chartScrollLayout)
+        self.chartScrollArea.setWidget(self.chartScrollWidget)     
+        #Button logic
+        self.filterParamListOptions.activated.connect(self.getChartData)
+        self.testFilterViewOption.activated.connect(self.getChartData)
         self.setupFilterInfo()
         self.filterListOption.activated.connect(self.setupFilterInfo)
         ##Setting up widgets
@@ -199,39 +298,57 @@ class ConfigTab(QWidget):
         row5 = RowWidget(self)  
         row5.layout.addWidget(QLabel("Description: "), 0, 0)
         row5.layout.addWidget(self.testFilterDescription, 0, 1)
-        row6 = RowWidget(self)  
-        row6.layout.addWidget(QLabel("Transform progress: "), 0, 0)
-        row6.layout.addWidget(self.transformProgress, 0, 1)
-        row7 = RowWidget(self)  
-        row7.layout.addWidget(QLabel("Learning progress: "), 0, 0)
-        row7.layout.addWidget(self.learningProgress, 0, 1)
         ##TESTING FILTER: add to layout
         self.testFilterLayout.addWidget(row1)
         self.testFilterLayout.addWidget(row3)
         self.testFilterLayout.addWidget(row2)
         self.testFilterLayout.addWidget(row4)
         self.testFilterLayout.addWidget(row5)
+        self.testFilterLayout.addWidget(self.chartScrollArea)
         self.testFilterLayout.addWidget(self.startFilteringButton)
-        self.testFilterLayout.addWidget(row6)
-        self.testFilterLayout.addWidget(row7)
-
-
+        ##Filter sessions:
+        self.FilterSessionBox = QGroupBox("Sessions")
+        self.FilterSessionBox.setMaximumWidth(1000)
+        self.FilterSessionBox.setMaximumHeight(1500)
+        self.FilterSessionBoxLayout = QVBoxLayout()
+        ##FILTER sessions: ITEMS
+        self.sessionItemList = dict()
+        self.filterSessionScroll = QScrollArea()
+        self.filterSessionScrollWidget = QWidget()
+        self.filterSessionScrollLayout = QVBoxLayout()
+        self.filterSessionScrollLayout.addStretch(1)
+        self.filterSessionScroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+        self.filterSessionScroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.filterSessionScroll.setWidgetResizable(True)
+        self.filterSessionScrollWidget.setLayout(self.filterSessionScrollLayout)
+        self.filterSessionScroll.setWidget(self.filterSessionScrollWidget)
+        self.FilterSessionBoxLayout.addWidget(self.filterSessionScroll)
         ###Filter: Setting layout and adding to main layout
         self.filterGroupBox.setLayout(self.filterLayout)
         self.testFilterBox.setLayout(self.testFilterLayout)
-        self.mainLayoutClusterList.addWidget(self.filterGroupBox)
+        self.FilterSessionBox.setLayout(self.FilterSessionBoxLayout)
         self.mainLayoutClusterList.addWidget(self.testFilterBox)
+        self.mainLayoutClusterList.addWidget(self.FilterSessionBox)
+        self.mainLayoutClusterList.addWidget(self.filterGroupBox)
 
 
     def addPipe(self):
         newPipe = filterPipeItem(dataDict=self.model.getAllEstimators())
         self.filterPipeList.append(newPipe)
+        label = QLabel(self)
+        pixmap = QPixmap('./localmedia/arrow.png')
+        pixmap = pixmap.scaledToWidth(30)
+        label.setAlignment(QtCore.Qt.AlignCenter)
+        label.setPixmap(pixmap)
+        self.filterPipeLayout.addWidget(label)
         self.filterPipeLayout.addWidget(newPipe)
 
     def removePipe(self):
         try:
             targetWidget = self.filterPipeList.pop()
             targetWidget.setParent(None)
+            layoutcount = self.filterPipeLayout.count() - 1
+            self.filterPipeLayout.itemAt(layoutcount).widget().setParent(None)
         except IndexError:
             pass
     
@@ -240,6 +357,12 @@ class ConfigTab(QWidget):
         for items in self.filterPipeList:
             pipline.append(items.getVals())
         name = self.filterNameUI.text()
+        if(pipline == []):
+            self.popupWarning(title="WARNING", message="No item in pipeline!")
+            return None
+        if(name==""):
+            self.popupWarning(title="WARNING", message="No filter name given")
+            return None
         description = self.filterDescriptionBox.toPlainText()
         trainable = self.filterTrainableCheck.isChecked()
         tag = self.filterTagDropDown.itemText(self.filterTagDropDown.currentIndex())
@@ -247,7 +370,7 @@ class ConfigTab(QWidget):
         if(create_req == 0):
             self.resetAll()
         elif(create_req == -1):
-            self.filterConsole.setText("Name already exists!")
+            self.popupWarning(title="WARNING", message="Filter with name already exists")
 
     
     def resetAll(self):
@@ -268,6 +391,7 @@ class ConfigTab(QWidget):
         self.filterParamListOptions.addItems(params)
         self.testFilterFocusName.setText(self.filterParamDict[curFilter]["focus"])
         self.testFilterDescription.setPlainText(self.filterParamDict[curFilter]["descript"])
+        self.getChartData()
 
     def getDirectoryLocation(self):
         fileLocal = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
@@ -275,36 +399,112 @@ class ConfigTab(QWidget):
             self.locationInputField.setText(fileLocal)
 
     def startFilteringProcess(self):
+        givenLoc = self.locationInputField.text()
         curFilter = self.filterListOption.itemText(self.filterListOption.currentIndex())
         curParam = self.filterParamListOptions.itemText(self.filterParamListOptions.currentIndex())
         selectedView = self.testFilterViewOption.itemText(self.testFilterViewOption.currentIndex())
-        imageLocation = os.path.join(self.locationInputField.text(), selectedView)
+        imageLocation = os.path.join(givenLoc, selectedView)
+        if(os.path.exists(imageLocation) == False):
+            errPopupWidget = QMessageBox()
+            errPopupWidget.setWindowTitle("No such directory")
+            errPopupWidget.setText("Either specified location does not exists or view")
+            errPopupWidget.setIcon(QMessageBox.Warning)
+            errPopupWidget.setStandardButtons(QMessageBox.Ok)
+            errPopupWidget.exec_()
+            return None
         filterFile = self.model.getAndSetFilter(curFilter, curParam)
-        noTransform = self.model.filterInfoCheck(imgLocal=imageLocation, filtername=curFilter, paramname=curParam, view=selectedView)
+        noTransform, ses_id = self.model.filterInfoCheck(imgLocal=imageLocation, filtername=curFilter, paramname=curParam, view=selectedView)
         if(noTransform != -1):
-            self.startFilteringButton.setEnabled(False)
-            filterThread = model.FilteringThread(filterFile, imageLocation, noTransform=noTransform)
+            filterThread = model.FilteringThread(filterFile, imageLocation, noTransform=noTransform, identity=ses_id)
+            self.sessionItemList[ses_id] = FliteringInfo(name=str(ses_id), thread=filterThread, filterr=curFilter, param=curParam, view=selectedView, directoryLocal=imageLocation)
+            self.sessionItemList[ses_id].tagDirectoryButton.clicked.connect(partial(self.goToFilterLocal, imageLocation))
+            self.filterSessionScrollLayout.addWidget(self.sessionItemList[ses_id])
             self.threadpool.start(filterThread)
             filterThread.signals.transformSignal.connect(self.progressBarHandle)
             filterThread.signals.learningSignal.connect(self.learningBarHandle)
+            filterThread.signals.errSignal.connect(self.filterErrorValue)
         else:
-            print("Working with same imagelocation, filter, parameter and view!")
+            errPopupWidget = QMessageBox()
+            errPopupWidget.setWindowTitle("NOT ALLOWED!")
+            errPopupWidget.setText("Working with same imagelocation, filter, parameter and view!")
+            errPopupWidget.setIcon(QMessageBox.Warning)
+            errPopupWidget.setStandardButtons(QMessageBox.Ok)
+            errPopupWidget.exec_()
     
     def progressBarHandle(self, message):
         if(message[0] == "size"):
-            self.transformProgress.setMaximum(message[1])
-            self.transformProgress.setValue(0)
+            self.sessionItemList[message[2]].transformProgress.setMaximum(message[1])
+            self.sessionItemList[message[2]].transformProgress.setValue(0)
         else:
-            maxx = self.transformProgress.maximum()
-            self.transformProgress.setValue(min(maxx, message[1]))
+            maxx = self.sessionItemList[message[2]].transformProgress.maximum()
+            self.sessionItemList[message[2]].transformProgress.setValue(min(maxx, message[1]))
+
 
     def learningBarHandle(self, message):
         if(message[0] == "ended"):
-            self.learningProgress.setMaximum(1)
-            self.learningProgress.setValue(1)
-            self.startFilteringButton.setEnabled(True)
+            self.sessionItemList[message[2]].learningProgress.setMaximum(100)
+            self.sessionItemList[message[2]].learningProgress.setValue(100)
+            self.sessionItemList[message[2]].setStyleSheet("QFrame { background-color: #73A657 } ")
+            self.sessionItemList[message[2]].status = False
+            self.sessionItemList[message[2]].configLabel.setText("Completed")
+            self.sessionItemList[message[2]].makeVisible()
+            #self.startFilteringButton.setEnabled(True)
         else:
-            self.learningProgress.setMaximum(message[1])
+            self.sessionItemList[message[2]].learningProgress.setMaximum(message[1])
+
+    def filterErrorValue(self, message):
+        self.sessionItemList[message[1]].status = False
+        self.sessionItemList[message[1]].setStyleSheet("QFrame { background-color: #C9BB8E }")
+        self.sessionItemList[message[1]].errorLog.setPlainText(message[2])
+        if(message[0] == 0):
+            self.sessionItemList[message[1]].configLabel.setText("Error occured during transformation!")
+            self.sessionItemList[message[1]].transformProgress.setStyleSheet("QProgressBar::chunk  {background: red}")
+        else:
+            self.sessionItemList[message[1]].configLabel.setText("Error occured during prediction!")
+            self.sessionItemList[message[1]].learningProgress.setStyleSheet("QProgressBar::chunk  {background: red}")
+
+
+    def getChartData(self):
+        curFilter = self.filterListOption.itemText(self.filterListOption.currentIndex())
+        curParam = self.filterParamListOptions.itemText(self.filterParamListOptions.currentIndex())
+        selectedView = self.testFilterViewOption.itemText(self.testFilterViewOption.currentIndex())
+        data = self.model.DB.query("SELECT tag_alias, tag_name, performance, ses_amt, detectedImage FROM Filter_tag WHERE filter_name=? AND Params=? AND View=?", (curFilter, curParam, selectedView))
+        self.clear_layout(self.chartScrollLayout)
+        if(len(data) != 0):
+            #There exists some information
+            chartData = dict()
+            for tups in data:
+                tag_alias = tups[0]
+                if(tag_alias not in chartData):
+                    chartData[tag_alias] = dict({"labels": [], "values": []})
+                chartData[tag_alias]["labels"].append(tups[1])
+                chartData[tag_alias]["values"].append(tups[2])
+            for tag_alias in chartData:
+                sc = MplCanvas(self, width=5, height=4, dpi=100)
+                sc.axes.pie(chartData[tag_alias]["values"], labels=chartData[tag_alias]["labels"], shadow=True, startangle=90)
+                Title = "cluster : {}".format(tag_alias)
+                sc.axes.set_title(Title)
+                #sc.axes.title(tag_alias)
+                toolbar = NavigationToolbar(sc, self)
+                layout = QVBoxLayout()
+                layout.addWidget(toolbar)
+                layout.addWidget(sc)
+                widget = QWidget()
+                widget.setLayout(layout)
+                widget.setMinimumHeight(300)
+                self.chartScrollLayout.addWidget(widget)
+
+
+    def popupWarning(self, title="", message=""):
+        errPopupWidget = QMessageBox()
+        errPopupWidget.setWindowTitle(title)
+        errPopupWidget.setText(message)
+        errPopupWidget.setIcon(QMessageBox.Warning)
+        errPopupWidget.setStandardButtons(QMessageBox.Ok)
+        errPopupWidget.exec_()
+
+    def goToFilterLocal(self, location):
+        self.parent.switch_and_set_location(location)
 
     def clear_layout(self, layout):
     #Code reference [ https://www.semicolonworld.com/question/58072/clear-all-widgets-in-a-layout-in-pyqt ]
