@@ -419,6 +419,7 @@ class FilteringThread(QtCore.QRunnable):
 			else:
 				transformArr = self.getSavedImageData(imgList)
 				self.signals.transformSignal.emit(("comp", len(imgList), self.identity))
+			return None
 		except:
 			errMsg = traceback.format_exc()
 			self.signals.errSignal.emit((0, self.identity, errMsg)) 
@@ -431,6 +432,7 @@ class FilteringThread(QtCore.QRunnable):
 			self.signals.learningSignal.emit(("ended", 100, self.identity))
 			self.moveImagesToDirect(imgList=imgList, predClass=pred)
 			print("Completed!")
+			return None
 		except:
 			errMsg = traceback.format_exc()
 			self.signals.errSignal.emit((1, self.identity, errMsg))
