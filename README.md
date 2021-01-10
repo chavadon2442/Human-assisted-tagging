@@ -11,6 +11,7 @@
 
 A system that automates the process of clustering & querying images as well as aids in the process of tagging un-labelled images. 
 
+
 ## Table of Contents
 
 - [Background](#background)
