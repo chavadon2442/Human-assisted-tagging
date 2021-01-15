@@ -5,6 +5,7 @@ from tabs.cluster_list_tab import ClusterListTab
 from tabs.cluster_profile_tab import ClusterProfileTab
 from tabs.config_tab import ConfigTab
 from tabs.training_tab import TrainTab
+from tabs.ikkiew_tab import IkkiewTab
 import os
 import sys
 from DB2 import databaseManager
@@ -25,10 +26,12 @@ class MainWindow(QWidget):
 		#self.clusterListTab = ClusterListTab(self, threadpool=self.threadPool, db=DB)
 		self.clusterProfileTab = ClusterProfileTab(self, threadpool=self.threadPool, db=DB)
 		self.configTab = ConfigTab(self, threadpool=self.threadPool, db=DB)
+		self.ikTab = IkkiewTab(self,threadpool=self.threadPool, db=DB)
 		#self.trainingTab = TrainTab(self, threadpool=self.threadPool)
 		#self.windowTab.addTab(self.clusterListTab, "Cluster location")
 		self.windowTab.addTab(self.clusterProfileTab, "Cluster profile")
 		self.windowTab.addTab(self.configTab, "Configuration")
+		self.windowTab.addTab(self.ikTab, "IkkiewTab")
 		#self.windowTab.addTab(self.trainingTab, "Training")
 		self.mainLayout.addWidget(self.windowTab)
 		self.setLayout(self.mainLayout)
